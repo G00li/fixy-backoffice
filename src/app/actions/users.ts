@@ -936,3 +936,57 @@ export async function getUserAuditLog(userId: string, limit = 50) {
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
+
+// Reset own password
+export async function resetOwnPassword(params: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Validate input
+    if (!params.currentPassword || !params.newPassword) {
+      return { success: false, error: 'All fields are required' };
+    }
+
+    if (params.newPassword.length < 8) {
+      return { success: false, error: 'New password must be at least 8 characters' };
+    }
+
+    if (params.currentPassword === params.newPassword) {
+      return { success: false, error: 'New password must be different from current password' };
+    }
+
+    // Verify current password by attempting to sign in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: params.currentPassword,
+    });
+
+    if (signInError) {
+      return { success: false, error: 'Current password is incorrect' };
+    }
+
+    // Update password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: params.newPassword,
+    });
+
+    if (updateError) {
+      console.error('Error updating password:', updateError);
+      return { success: false, error: 'Failed to update password' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error resetting password:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}

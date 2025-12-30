@@ -1,25 +1,63 @@
-import UserAddressCard from "@/components/user-profile/UserAddressCard";
-import UserInfoCard from "@/components/user-profile/UserInfoCard";
-import UserMetaCard from "@/components/user-profile/UserMetaCard";
+"use client";
 import { getCurrentUserProfile } from "@/app/actions/users";
 import { redirect } from "next/navigation";
-import { Metadata } from "next";
-import React from "react";
+import { useEffect, useState } from "react";
+import ProfileTabs from "@/components/user-profile/ProfileTabs";
+import GeneralTab from "@/components/user-profile/GeneralTab";
+import SecurityTab from "@/components/user-profile/SecurityTab";
 
-export const metadata: Metadata = {
-  title: "Profile | Fixy Backoffice",
-  description: "Manage your profile information",
-};
+export default function Profile() {
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-export default async function Profile() {
-  // Get current user profile
-  const result = await getCurrentUserProfile();
+  useEffect(() => {
+    async function loadProfile() {
+      const result = await getCurrentUserProfile();
+      
+      if (!result.success || !result.profile) {
+        redirect('/signin');
+        return;
+      }
 
-  if (!result.success || !result.profile) {
-    redirect('/signin');
+      setProfile(result.profile);
+      setLoading(false);
+    }
+
+    loadProfile();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-brand-500"></div>
+      </div>
+    );
   }
 
-  const profile = result.profile;
+  if (!profile) {
+    return null;
+  }
+
+  const tabs = [
+    {
+      id: "general",
+      label: "General",
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+      ),
+    },
+    {
+      id: "security",
+      label: "Security",
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      ),
+    },
+  ];
 
   return (
     <div>
@@ -27,11 +65,15 @@ export default async function Profile() {
         <h3 className="mb-5 text-lg font-semibold text-gray-800 dark:text-white/90 lg:mb-7">
           Profile
         </h3>
-        <div className="space-y-6">
-          <UserMetaCard profile={profile} />
-          <UserInfoCard profile={profile} />
-          <UserAddressCard profile={profile} />
-        </div>
+        
+        <ProfileTabs tabs={tabs} defaultTab="general">
+          <div data-tab="general">
+            <GeneralTab profile={profile} />
+          </div>
+          <div data-tab="security">
+            <SecurityTab />
+          </div>
+        </ProfileTabs>
       </div>
     </div>
   );
