@@ -937,6 +937,123 @@ export async function getUserAuditLog(userId: string, limit = 50) {
   }
 }
 
+// Reset user password by admin (super-admin only)
+export async function resetUserPasswordByAdmin(params: {
+  targetUserId: string;
+  newPassword?: string;
+  generateTemporary?: boolean;
+}) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user (admin)
+    const { data: { user: admin } } = await supabase.auth.getUser();
+    if (!admin) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Check if admin is super_admin
+    const { data: isSuperAdmin } = await supabase.rpc('is_super_admin', {
+      user_id: admin.id
+    });
+
+    if (!isSuperAdmin) {
+      return { success: false, error: 'Only super admins can reset user passwords' };
+    }
+
+    // Get target user info
+    const { data: targetUser } = await supabase
+      .from('users_with_roles')
+      .select('*')
+      .eq('id', params.targetUserId)
+      .single();
+
+    if (!targetUser) {
+      return { success: false, error: 'Target user not found' };
+    }
+
+    // Cannot reset password of another super_admin
+    if (targetUser.role === 'super_admin') {
+      return { success: false, error: 'Cannot reset password of another super admin' };
+    }
+
+    // Validate password
+    if (!params.newPassword) {
+      return { success: false, error: 'Password is required' };
+    }
+    
+    if (params.newPassword.length < 8) {
+      return { success: false, error: 'Password must be at least 8 characters' };
+    }
+
+    const passwordToSet = params.newPassword;
+    const isTemporary = params.generateTemporary || false;
+
+    // Update password using admin client
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+      params.targetUserId,
+      { password: passwordToSet }
+    );
+
+    if (updateError) {
+      console.error('Error updating password:', updateError);
+      return { success: false, error: 'Failed to update password' };
+    }
+
+    // Update profile with password expiration flags
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .update({
+        password_is_temporary: isTemporary,
+        password_expires_at: isTemporary ? new Date().toISOString() : null, // Expire immediately if temporary
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', params.targetUserId);
+
+    if (profileError) {
+      console.error('Error updating profile:', profileError);
+      // Don't fail the whole operation, just log
+    }
+
+    // Log the action
+    await supabase.rpc('log_admin_action', {
+      p_admin_id: admin.id,
+      p_action_type: 'reset_user_password',
+      p_target_user_id: params.targetUserId,
+      p_target_role: targetUser.role ?? undefined,
+      p_new_data: {
+        password_changed: true,
+        forced_by_admin: true,
+        admin_email: admin.email,
+        is_temporary: isTemporary,
+      },
+    });
+
+    // Notify the user
+    await supabase.rpc('notify_user', {
+      p_recipient_id: params.targetUserId,
+      p_title: 'Password Changed by Administrator',
+      p_message: isTemporary 
+        ? 'Your password was reset by an administrator with a temporary password. You must change it on your next login.'
+        : 'Your password was reset by an administrator. Please log in with your new password and consider changing it to something you\'ll remember.',
+      p_notification_type: 'security_alert',
+      p_data: {
+        changed_by_admin: true,
+        admin_id: admin.id,
+        is_temporary: isTemporary,
+      },
+      p_priority: 'high',
+    });
+
+    return { 
+      success: true,
+    };
+  } catch (error) {
+    console.error('Unexpected error resetting user password:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
 // Reset own password
 export async function resetOwnPassword(params: {
   currentPassword: string;
@@ -988,5 +1105,96 @@ export async function resetOwnPassword(params: {
   } catch (error) {
     console.error('Unexpected error resetting password:', error);
     return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// Change expired password
+export async function changeExpiredPassword(params: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Check if password is expired
+    const { data: hasExpired } = await supabase.rpc('has_expired_password', {
+      user_id: user.id
+    });
+
+    if (!hasExpired) {
+      return { success: false, error: 'Password is not expired' };
+    }
+
+    // Validate input
+    if (!params.currentPassword || !params.newPassword) {
+      return { success: false, error: 'All fields are required' };
+    }
+
+    if (params.newPassword.length < 8) {
+      return { success: false, error: 'New password must be at least 8 characters' };
+    }
+
+    if (params.currentPassword === params.newPassword) {
+      return { success: false, error: 'New password must be different from current password' };
+    }
+
+    // Verify current password by attempting to sign in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: params.currentPassword,
+    });
+
+    if (signInError) {
+      return { success: false, error: 'Current password is incorrect' };
+    }
+
+    // Update password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: params.newPassword,
+    });
+
+    if (updateError) {
+      console.error('Error updating password:', updateError);
+      return { success: false, error: 'Failed to update password' };
+    }
+
+    // Mark password as changed (removes temporary and expiration flags)
+    await supabase.rpc('mark_password_changed', {
+      user_id: user.id
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error changing expired password:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// Check if current user has expired password
+export async function checkPasswordExpiration() {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, hasExpired: false };
+    }
+
+    // Check if password is expired
+    const { data: hasExpired } = await supabase.rpc('has_expired_password', {
+      user_id: user.id
+    });
+
+    return { success: true, hasExpired: hasExpired || false };
+  } catch (error) {
+    console.error('Unexpected error checking password expiration:', error);
+    return { success: false, hasExpired: false };
   }
 }

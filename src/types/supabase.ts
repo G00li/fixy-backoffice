@@ -15,7 +15,7 @@ export type Database = {
           admin_id: string
           created_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_data: Json | null
           previous_data: Json | null
           target_role: string | null
@@ -27,7 +27,7 @@ export type Database = {
           admin_id: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_data?: Json | null
           previous_data?: Json | null
           target_role?: string | null
@@ -39,7 +39,7 @@ export type Database = {
           admin_id?: string
           created_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_data?: Json | null
           previous_data?: Json | null
           target_role?: string | null
@@ -98,6 +98,13 @@ export type Database = {
           avatar_url: string | null
           phone: string | null
           bio: string | null
+          username: string | null
+          postal_code: string | null
+          location_text: string | null
+          address: Json | null
+          password_is_temporary: boolean | null
+          password_expires_at: string | null
+          password_changed_at: string | null
           created_at: string | null
           updated_at: string | null
         }
@@ -108,6 +115,13 @@ export type Database = {
           avatar_url?: string | null
           phone?: string | null
           bio?: string | null
+          username?: string | null
+          postal_code?: string | null
+          location_text?: string | null
+          address?: Json | null
+          password_is_temporary?: boolean | null
+          password_expires_at?: string | null
+          password_changed_at?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -118,6 +132,13 @@ export type Database = {
           avatar_url?: string | null
           phone?: string | null
           bio?: string | null
+          username?: string | null
+          postal_code?: string | null
+          location_text?: string | null
+          address?: Json | null
+          password_is_temporary?: boolean | null
+          password_expires_at?: string | null
+          password_changed_at?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -154,10 +175,16 @@ export type Database = {
           avatar_url: string | null
           phone: string | null
           bio: string | null
+          username: string | null
+          postal_code: string | null
+          location_text: string | null
+          address: Json | null
+          password_is_temporary: boolean | null
+          password_expires_at: string | null
+          password_changed_at: string | null
           role: string | null
           role_assigned_at: string | null
           created_at: string | null
-          updated_at: string | null
         }
         Relationships: []
       }
@@ -216,7 +243,7 @@ export type Database = {
           p_data?: Json
           p_priority?: string
         }
-        Returns: void
+        Returns: undefined
       }
       notify_user: {
         Args: {
@@ -230,20 +257,6 @@ export type Database = {
         }
         Returns: string
       }
-      can_manage_user: {
-        Args: {
-          p_manager_id: string
-          p_target_user_id: string
-        }
-        Returns: boolean
-      }
-      can_create_role: {
-        Args: {
-          p_creator_id: string
-          p_target_role: string
-        }
-        Returns: boolean
-      }
       get_user_notifications: {
         Args: {
           p_user_id: string
@@ -253,9 +266,9 @@ export type Database = {
         }
         Returns: {
           id: string
-          notification_type: string
           title: string
           message: string
+          notification_type: string
           data: Json
           priority: string
           scheduled_for: string
@@ -272,10 +285,30 @@ export type Database = {
         Returns: boolean
       }
       get_unread_notification_count: {
-        Args: {
-          p_user_id: string
-        }
+        Args: { p_user_id: string }
         Returns: number
+      }
+      can_create_role: {
+        Args: {
+          p_creator_id: string
+          p_target_role: string
+        }
+        Returns: boolean
+      }
+      can_manage_user: {
+        Args: {
+          p_manager_id: string
+          p_target_user_id: string
+        }
+        Returns: boolean
+      }
+      has_expired_password: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      mark_password_changed: {
+        Args: { user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
@@ -283,8 +316,3 @@ export type Database = {
     }
   }
 }
-
-export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row']
-export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert']
-export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update']
-export type Enums<T extends keyof Database['public']['Enums']> = Database['public']['Enums'][T]

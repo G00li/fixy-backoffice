@@ -37,7 +37,16 @@ export async function middleware(request: NextRequest) {
     '/unauthorized',
   ];
 
+  // Define auth routes (accessible when authenticated)
+  const authRoutes = [
+    '/change-password',
+  ];
+
   const isPublicRoute = publicRoutes.some(route =>
+    request.nextUrl.pathname.startsWith(route)
+  );
+
+  const isAuthRoute = authRoutes.some(route =>
     request.nextUrl.pathname.startsWith(route)
   );
 
@@ -52,6 +61,26 @@ export async function middleware(request: NextRequest) {
     url.pathname = '/signin';
     url.searchParams.set('redirectTo', request.nextUrl.pathname);
     return NextResponse.redirect(url);
+  }
+
+  // Check for expired password (for authenticated users)
+  if (user && !isAuthRoute) {
+    try {
+      const { data: hasExpired, error: expiredError } = await supabase.rpc('has_expired_password', {
+        user_id: user.id,
+      });
+
+      if (expiredError) {
+        console.error('Error checking password expiration:', expiredError);
+      } else if (hasExpired) {
+        // Redirect to change password page
+        const url = request.nextUrl.clone();
+        url.pathname = '/change-password';
+        return NextResponse.redirect(url);
+      }
+    } catch (error) {
+      console.error('Unexpected error checking password expiration:', error);
+    }
   }
 
   // Check admin role for authenticated users on protected routes

@@ -1,7 +1,8 @@
 import { Suspense, use } from 'react';
 import Link from 'next/link';
-import { getUserDetail, getUserAuditLog } from '@/app/actions/users';
+import { getUserDetail, getUserAuditLog, getCurrentUserProfile } from '@/app/actions/users';
 import RoleBadge from '@/components/users/RoleBadge';
+import ResetPasswordButton from '@/components/users/ResetPasswordButton';
 import { redirect } from 'next/navigation';
 
 async function UserDetailContent({ userId }: { userId: string }) {
@@ -28,6 +29,10 @@ async function UserDetailContent({ userId }: { userId: string }) {
       </div>
     );
   }
+
+  // Get current user profile to check role
+  const currentUserResult = await getCurrentUserProfile();
+  const currentUserRole = currentUserResult.success ? currentUserResult.profile?.role : null;
 
   // Get audit log
   const auditResult = await getUserAuditLog(userId, 10);
@@ -60,25 +65,36 @@ async function UserDetailContent({ userId }: { userId: string }) {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             User Details
           </h1>
-          <Link
-            href={`/users/${userId}/edit`}
-            className="inline-flex items-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
-          >
-            <svg
-              className="mr-2 h-4 w-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div className="flex items-center gap-3">
+            <ResetPasswordButton 
+              user={{
+                id: user.id,
+                full_name: user.full_name,
+                email: user.email,
+                role: user.role,
+              }}
+              currentUserRole={currentUserRole}
+            />
+            <Link
+              href={`/users/${userId}/edit`}
+              className="inline-flex items-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-              />
-            </svg>
-            Edit User
-          </Link>
+              <svg
+                className="mr-2 h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
+              </svg>
+              Edit User
+            </Link>
+          </div>
         </div>
       </div>
 
