@@ -917,8 +917,8 @@ export async function getUserAuditLog(userId: string, limit = 50) {
       return { success: false, error: 'Insufficient permissions' };
     }
 
-    // Get audit log
-    const { data: logs, error } = await supabase
+    // Get audit log using admin client (permissions already validated)
+    const { data: logs, error } = await supabaseAdmin
       .from('admin_actions_log')
       .select('*')
       .eq('target_user_id', userId)

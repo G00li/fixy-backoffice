@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getUserDetail, updateUser, updateUserRole } from '@/app/actions/users';
 import RoleBadge from '@/components/users/RoleBadge';
 
-export default function EditUserPage({ params }: { params: { id: string } }) {
+export default function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const userId = params.id;
+  const { id: userId } = use(params);
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -19,7 +19,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
     fullName: '',
     phone: '',
     bio: '',
-    role: '' as string,
+    role: '',
   });
 
   const [originalRole, setOriginalRole] = useState('');
@@ -33,7 +33,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
           fullName: result.user.full_name || '',
           phone: result.user.phone || '',
           bio: result.user.bio || '',
-          role: result.user.role as any,
+          role: result.user.role || '',
         });
         setOriginalRole(result.user.role || '');
       } else {
@@ -191,7 +191,7 @@ export default function EditUserPage({ params }: { params: { id: string } }) {
             Role <span className="text-red-500">*</span>
           </label>
           <select
-            value={formData.role}
+            value={formData.role || ''}
             onChange={(e) => setFormData({ ...formData, role: e.target.value })}
             required
             disabled={saving}

@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, use } from 'react';
 import Link from 'next/link';
 import { getUserDetail, getUserAuditLog } from '@/app/actions/users';
 import RoleBadge from '@/components/users/RoleBadge';
@@ -213,8 +213,10 @@ async function UserDetailContent({ userId }: { userId: string }) {
 export default function UserDetailPage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
+  const { id: userId } = use(params);
+  
   return (
     <Suspense
       fallback={
@@ -223,7 +225,7 @@ export default function UserDetailPage({
         </div>
       }
     >
-      <UserDetailContent userId={params.id} />
+      <UserDetailContent userId={userId} />
     </Suspense>
   );
 }
