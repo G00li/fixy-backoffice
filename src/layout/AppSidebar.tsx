@@ -1,9 +1,10 @@
 "use client";
-import React, { useEffect, useRef, useState,useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   BoxCubeIcon,
   CalenderIcon,
@@ -25,39 +26,70 @@ type NavItem = {
   icon: React.ReactNode;
   path?: string;
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean }[];
+  requiredRoles?: Array<'super_admin' | 'admin' | 'support' | 'provider' | 'client'>;
 };
 
 const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    path: "/",
+    requiredRoles: ['super_admin', 'admin', 'support', 'client'],
+  },
+  {
+    icon: <GridIcon />,
+    name: "Provider Dashboard",
+    path: "/provider/dashboard",
+    requiredRoles: ['provider'],
   },
   {
     icon: <CalenderIcon />,
     name: "Calendar",
     path: "/calendar",
+    requiredRoles: ['super_admin', 'admin', 'support', 'provider'],
   },
   {
     icon: <UserIcon />,
     name: "Users",
     path: "/users",
+    requiredRoles: ['super_admin', 'admin'],
+  },
+  {
+    icon: <UserIcon />,
+    name: "Providers",
+    path: "/search",
+    requiredRoles: ['super_admin', 'admin', 'support'],
+  },
+  {
+    icon: <BoxCubeIcon />,
+    name: "My Status",
+    path: "/provider/status",
+    requiredRoles: ['provider'],
+  },
+  {
+    icon: <PageIcon />,
+    name: "My Posts",
+    path: "/provider/posts",
+    requiredRoles: ['provider'],
   },
   {
     icon: <UserCircleIcon />,
-    name: "User Profile",
+    name: "Profile",
     path: "/profile",
+    requiredRoles: ['super_admin', 'admin', 'support', 'provider', 'client'],
   },
 
   {
     name: "Forms",
     icon: <ListIcon />,
     subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
+    requiredRoles: ['super_admin', 'admin'],
   },
   {
     name: "Tables",
     icon: <TableIcon />,
     subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
+    requiredRoles: ['super_admin', 'admin'],
   },
   {
     name: "Pages",
@@ -66,6 +98,7 @@ const navItems: NavItem[] = [
       { name: "Blank Page", path: "/blank", pro: false },
       { name: "404 Error", path: "/error-404", pro: false },
     ],
+    requiredRoles: ['super_admin', 'admin'],
   },
 ];
 
@@ -77,6 +110,7 @@ const othersItems: NavItem[] = [
       { name: "Line Chart", path: "/line-chart", pro: false },
       { name: "Bar Chart", path: "/bar-chart", pro: false },
     ],
+    requiredRoles: ['super_admin', 'admin'],
   },
   {
     icon: <BoxCubeIcon />,
@@ -89,6 +123,7 @@ const othersItems: NavItem[] = [
       { name: "Images", path: "/images", pro: false },
       { name: "Videos", path: "/videos", pro: false },
     ],
+    requiredRoles: ['super_admin', 'admin'],
   },
   {
     icon: <PlugInIcon />,
@@ -97,12 +132,30 @@ const othersItems: NavItem[] = [
       { name: "Sign In", path: "/signin", pro: false },
       { name: "Sign Up", path: "/signup", pro: false },
     ],
+    requiredRoles: ['super_admin', 'admin'],
   },
 ];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
+  const { user } = useCurrentUser();
+
+  // Filter menu items based on user role - memoized to prevent infinite loops
+  const filterMenuItems = useCallback((items: NavItem[]): NavItem[] => {
+    if (!user?.role) return [];
+    
+    return items.filter(item => {
+      // If no requiredRoles specified, show to everyone
+      if (!item.requiredRoles) return true;
+      
+      // Check if user's role is in the allowed roles
+      return item.requiredRoles.includes(user.role as any);
+    });
+  }, [user?.role]);
+
+  const filteredNavItems = useMemo(() => filterMenuItems(navItems), [filterMenuItems]);
+  const filteredOthersItems = useMemo(() => filterMenuItems(othersItems), [filterMenuItems]);
 
   const renderMenuItems = (
     navItems: NavItem[],
@@ -246,7 +299,7 @@ const AppSidebar: React.FC = () => {
     // Check if the current path matches any submenu item
     let submenuMatched = false;
     ["main", "others"].forEach((menuType) => {
-      const items = menuType === "main" ? navItems : othersItems;
+      const items = menuType === "main" ? filteredNavItems : filteredOthersItems;
       items.forEach((nav, index) => {
         if (nav.subItems) {
           nav.subItems.forEach((subItem) => {
@@ -266,7 +319,7 @@ const AppSidebar: React.FC = () => {
     if (!submenuMatched) {
       setOpenSubmenu(null);
     }
-  }, [pathname,isActive]);
+  }, [pathname, isActive, filteredNavItems, filteredOthersItems]);
 
   useEffect(() => {
     // Set the height of the submenu items when the submenu is opened
@@ -359,25 +412,27 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(filteredNavItems, "main")}
             </div>
 
-            <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
-            </div>
+            {filteredOthersItems.length > 0 && (
+              <div className="">
+                <h2
+                  className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                    !isExpanded && !isHovered
+                      ? "lg:justify-center"
+                      : "justify-start"
+                  }`}
+                >
+                  {isExpanded || isHovered || isMobileOpen ? (
+                    "Others"
+                  ) : (
+                    <HorizontaLDots />
+                  )}
+                </h2>
+                {renderMenuItems(filteredOthersItems, "others")}
+              </div>
+            )}
           </div>
         </nav>
         {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
@@ -386,4 +441,4 @@ const AppSidebar: React.FC = () => {
   );
 };
 
-export default AppSidebar;
+export default React.memo(AppSidebar);

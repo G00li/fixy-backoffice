@@ -14,4 +14,4 @@ const Backdrop: React.FC = () => {
   );
 };
 
-export default Backdrop;
+export default React.memo(Backdrop);

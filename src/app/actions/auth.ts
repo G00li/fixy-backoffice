@@ -6,7 +6,8 @@ import { revalidatePath } from 'next/cache';
 
 /**
  * Login with email and password
- * Validates admin role before allowing access
+ * All authenticated users can access the dashboard
+ * Role-based access control is handled at the page/component level
  */
 export async function login(email: string, password: string) {
   const supabase = await createClient();
@@ -24,21 +25,8 @@ export async function login(email: string, password: string) {
     return { success: false, error: 'Authentication failed' };
   }
 
-  // Check if user has admin or super_admin role
-  const { data: isAdmin, error: roleError } = await supabase.rpc('is_admin', {
-    user_id: data.user.id,
-  });
-
-  if (roleError) {
-    await supabase.auth.signOut();
-    return { success: false, error: 'Failed to verify permissions' };
-  }
-
-  if (!isAdmin) {
-    await supabase.auth.signOut();
-    return { success: false, error: 'Access denied. Admin privileges required.' };
-  }
-
+  // All authenticated users can access the dashboard
+  // Role-based permissions are checked at the component/page level
   revalidatePath('/', 'layout');
   return { success: true };
 }

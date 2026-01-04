@@ -83,33 +83,8 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Check admin role for authenticated users on protected routes
-  if (user) {
-    try {
-      const { data: isAdmin, error } = await supabase.rpc('is_admin', {
-        user_id: user.id,
-      });
-
-      if (error) {
-        console.error('Error checking admin role:', error);
-        const url = request.nextUrl.clone();
-        url.pathname = '/unauthorized';
-        return NextResponse.redirect(url);
-      }
-
-      if (!isAdmin) {
-        const url = request.nextUrl.clone();
-        url.pathname = '/unauthorized';
-        return NextResponse.redirect(url);
-      }
-    } catch (error) {
-      console.error('Unexpected error in middleware:', error);
-      const url = request.nextUrl.clone();
-      url.pathname = '/unauthorized';
-      return NextResponse.redirect(url);
-    }
-  }
-
+  // All authenticated users can access the dashboard
+  // Role-based access control is handled at the page/component level
   return supabaseResponse;
 }
 

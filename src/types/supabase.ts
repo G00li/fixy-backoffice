@@ -105,6 +105,12 @@ export type Database = {
           password_is_temporary: boolean | null
           password_expires_at: string | null
           password_changed_at: string | null
+          cover_image_url: string | null
+          business_name: string | null
+          display_name: string | null
+          social_media: Json | null
+          is_verified: boolean | null
+          verified_at: string | null
           created_at: string | null
           updated_at: string | null
         }
@@ -122,6 +128,12 @@ export type Database = {
           password_is_temporary?: boolean | null
           password_expires_at?: string | null
           password_changed_at?: string | null
+          cover_image_url?: string | null
+          business_name?: string | null
+          display_name?: string | null
+          social_media?: Json | null
+          is_verified?: boolean | null
+          verified_at?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -139,6 +151,12 @@ export type Database = {
           password_is_temporary?: boolean | null
           password_expires_at?: string | null
           password_changed_at?: string | null
+          cover_image_url?: string | null
+          business_name?: string | null
+          display_name?: string | null
+          social_media?: Json | null
+          is_verified?: boolean | null
+          verified_at?: string | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -182,6 +200,12 @@ export type Database = {
           password_is_temporary: boolean | null
           password_expires_at: string | null
           password_changed_at: string | null
+          cover_image_url: string | null
+          business_name: string | null
+          display_name: string | null
+          social_media: Json | null
+          is_verified: boolean | null
+          verified_at: string | null
           role: string | null
           role_assigned_at: string | null
           created_at: string | null

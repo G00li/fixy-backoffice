@@ -9,9 +9,15 @@ export interface UserWithRole {
   id: string;
   email: string | null;
   full_name: string | null;
+  display_name: string | null;
+  business_name: string | null;
   avatar_url: string | null;
+  cover_image_url: string | null;
   phone: string | null;
   bio: string | null;
+  social_media: any;
+  is_verified: boolean | null;
+  verified_at: string | null;
   role: string | null;
   role_assigned_at: string | null;
   created_at: string | null;
@@ -236,6 +242,102 @@ export async function uploadAvatar(formData: FormData) {
   }
 }
 
+// Upload cover image to Supabase Storage
+export async function uploadCoverImage(formData: FormData) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const file = formData.get('cover') as File;
+    if (!file) {
+      return { success: false, error: 'No file provided' };
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      return { success: false, error: 'Invalid file type. Only JPG, PNG, and WebP are allowed' };
+    }
+
+    // Validate file size (5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      return { success: false, error: 'File size must be less than 5MB' };
+    }
+
+    // Get current cover image to delete later
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('cover_image_url')
+      .eq('id', user.id)
+      .single();
+
+    // Generate unique filename
+    const fileExt = file.name.split('.').pop();
+    const timestamp = Date.now();
+    const fileName = `${user.id}/cover_${timestamp}.${fileExt}`;
+
+    // Upload file to post-images bucket (reusing existing bucket)
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('post-images')
+      .upload(`covers/${fileName}`, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('Error uploading cover image:', uploadError);
+      return { success: false, error: 'Failed to upload cover image' };
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from('post-images')
+      .getPublicUrl(`covers/${fileName}`);
+
+    // Update profile with new cover image URL
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ 
+        cover_image_url: publicUrl,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Error updating profile:', updateError);
+      // Try to delete uploaded file
+      await supabase.storage.from('post-images').remove([`covers/${fileName}`]);
+      return { success: false, error: 'Failed to update profile' };
+    }
+
+    // Delete old cover image if exists
+    if (profile?.cover_image_url) {
+      try {
+        const oldPath = profile.cover_image_url.split('/post-images/')[1];
+        if (oldPath) {
+          await supabase.storage.from('post-images').remove([oldPath]);
+        }
+      } catch (error) {
+        // Ignore errors when deleting old cover image
+        console.log('Could not delete old cover image:', error);
+      }
+    }
+
+    revalidatePath('/profile');
+    
+    return { success: true, url: publicUrl };
+  } catch (error) {
+    console.error('Unexpected error uploading cover image:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
 // Delete avatar from Supabase Storage
 export async function deleteAvatar() {
   try {
@@ -297,6 +399,67 @@ export async function deleteAvatar() {
   }
 }
 
+// Delete cover image from Supabase Storage
+export async function deleteCoverImage() {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Get current cover image
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('cover_image_url')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile?.cover_image_url) {
+      return { success: false, error: 'No cover image to delete' };
+    }
+
+    // Extract file path from URL
+    const filePath = profile.cover_image_url.split('/post-images/')[1];
+    if (!filePath) {
+      return { success: false, error: 'Invalid cover image URL' };
+    }
+
+    // Delete from storage
+    const { error: deleteError } = await supabase.storage
+      .from('post-images')
+      .remove([filePath]);
+
+    if (deleteError) {
+      console.error('Error deleting cover image:', deleteError);
+      return { success: false, error: 'Failed to delete cover image' };
+    }
+
+    // Update profile to remove cover image URL
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ 
+        cover_image_url: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', user.id);
+
+    if (updateError) {
+      console.error('Error updating profile:', updateError);
+      return { success: false, error: 'Failed to update profile' };
+    }
+
+    revalidatePath('/profile');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error deleting cover image:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
 // Check if username is available
 export async function checkUsernameAvailability(username: string) {
   try {
@@ -335,10 +498,14 @@ export async function checkUsernameAvailability(username: string) {
 // Update own profile
 export async function updateOwnProfile(params: {
   fullName?: string;
+  displayName?: string;
+  businessName?: string;
   username?: string;
   phone?: string;
   bio?: string;
   avatarUrl?: string;
+  coverImageUrl?: string;
+  socialMedia?: any;
   postalCode?: string;
   locationText?: string;
   address?: any;
@@ -379,10 +546,14 @@ export async function updateOwnProfile(params: {
     // Build update object
     const updateData: any = { updated_at: new Date().toISOString() };
     if (params.fullName !== undefined) updateData.full_name = params.fullName;
+    if (params.displayName !== undefined) updateData.display_name = params.displayName;
+    if (params.businessName !== undefined) updateData.business_name = params.businessName;
     if (params.username !== undefined) updateData.username = params.username;
     if (params.phone !== undefined) updateData.phone = params.phone;
     if (params.bio !== undefined) updateData.bio = params.bio;
     if (params.avatarUrl !== undefined) updateData.avatar_url = params.avatarUrl;
+    if (params.coverImageUrl !== undefined) updateData.cover_image_url = params.coverImageUrl;
+    if (params.socialMedia !== undefined) updateData.social_media = params.socialMedia;
     if (params.postalCode !== undefined) updateData.postal_code = params.postalCode;
     if (params.locationText !== undefined) updateData.location_text = params.locationText;
     if (params.address !== undefined) updateData.address = params.address;
@@ -606,12 +777,15 @@ export async function createUser(params: CreateUserParams) {
       return { success: false, error: 'Failed to create user profile' };
     }
 
-    // Assign role
+    // Assign role using UPSERT to handle the case where trigger already created a default role
     const { error: roleError } = await supabaseAdmin
       .from('user_roles')
-      .insert({
+      .upsert({
         user_id: newUserId,
         role: params.role,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
       });
 
     if (roleError) {

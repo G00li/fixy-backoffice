@@ -2,14 +2,16 @@
 import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
+import ProviderStatusQuickToggle from "@/components/header/ProviderStatusQuickToggle";
 import { useSidebar } from "@/context/SidebarContext";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState ,useEffect,useRef} from "react";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-
+  const { user } = useCurrentUser();
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
   const handleToggle = () => {
@@ -165,6 +167,12 @@ const AppHeader: React.FC = () => {
             <ThemeToggleButton />
             {/* <!-- Dark Mode Toggler --> */}
 
+            {/* <!-- Provider Status Quick Toggle --> */}
+            {user?.role === 'provider' && (
+              <ProviderStatusQuickToggle providerId={user.id} />
+            )}
+            {/* <!-- Provider Status Quick Toggle --> */}
+
            <NotificationDropdown /> 
             {/* <!-- Notification Menu Area --> */}
           </div>
@@ -177,4 +185,4 @@ const AppHeader: React.FC = () => {
   );
 };
 
-export default AppHeader;
+export default React.memo(AppHeader);
