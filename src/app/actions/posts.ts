@@ -116,6 +116,19 @@ export async function getProviderPosts(params: {
   includeInactive?: boolean;
 }) {
   try {
+    // Validate providerId
+    if (!params.providerId || params.providerId === 'undefined') {
+      console.error('Invalid providerId:', params.providerId);
+      return {
+        success: true,
+        posts: [],
+        total: 0,
+        page: params.page || 1,
+        limit: params.limit || 20,
+        totalPages: 0,
+      };
+    }
+
     const supabase = await createClient();
     
     const page = params.page || 1;
@@ -126,12 +139,13 @@ export async function getProviderPosts(params: {
     let query = supabase
       .from('provider_posts')
       .select('*', { count: 'exact' })
-      .eq('provider_id', params.providerId)
-      .eq('moderation_status', 'approved');
+      .eq('provider_id', params.providerId);
 
-    // Filter by active status
+    // Only filter by moderation_status and is_active if not owner
     if (!params.includeInactive) {
-      query = query.eq('is_active', true);
+      query = query
+        .eq('is_active', true)
+        .eq('moderation_status', 'approved');
     }
 
     // Apply pagination and ordering
@@ -142,21 +156,37 @@ export async function getProviderPosts(params: {
     const { data: posts, error, count } = await query;
 
     if (error) {
-      console.error('Error fetching posts:', error);
-      return { success: false, error: 'Failed to fetch posts' };
+      console.error('Error fetching posts:', error, 'Provider ID:', params.providerId);
+      // Return empty array instead of error to allow page to load
+      return {
+        success: true,
+        posts: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
     }
 
     return {
       success: true,
-      posts: posts as ProviderPost[],
+      posts: (posts || []) as ProviderPost[],
       total: count || 0,
       page,
       limit,
       totalPages: Math.ceil((count || 0) / limit),
     };
   } catch (error) {
-    console.error('Unexpected error fetching posts:', error);
-    return { success: false, error: 'An unexpected error occurred' };
+    console.error('Unexpected error fetching posts:', error, 'Provider ID:', params.providerId);
+    // Return empty array instead of error to allow page to load
+    return {
+      success: true,
+      posts: [],
+      total: 0,
+      page: params.page || 1,
+      limit: params.limit || 20,
+      totalPages: 0,
+    };
   }
 }
 

@@ -11,9 +11,9 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function ProviderSchedulePage({ params }: PageProps) {
@@ -23,7 +23,8 @@ export default async function ProviderSchedulePage({ params }: PageProps) {
     redirect('/login');
   }
 
-  const providerId = params.id;
+  // Await params (Next.js 15+)
+  const { id: providerId } = await params;
   const isOwner = user.id === providerId;
 
   // Only owner can access schedule

@@ -4,13 +4,16 @@ import BookingForm from '@/components/bookings/BookingForm';
 import Link from 'next/link';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function ProviderBookPage({ params }: PageProps) {
   const supabase = await createClient();
+
+  // Await params (Next.js 15+)
+  const { id: providerId } = await params;
 
   // Check if user is authenticated
   const {
@@ -25,7 +28,7 @@ export default async function ProviderBookPage({ params }: PageProps) {
   const { data: provider, error: providerError } = await supabase
     .from('profiles')
     .select('id, full_name, business_name, avatar_url, bio')
-    .eq('id', params.id)
+    .eq('id', providerId)
     .eq('role', 'provider')
     .single();
 
@@ -37,7 +40,7 @@ export default async function ProviderBookPage({ params }: PageProps) {
   const { data: services, error: servicesError } = await supabase
     .from('services')
     .select('id, title, description, duration_min, price')
-    .eq('provider_id', params.id)
+    .eq('provider_id', providerId)
     .eq('is_active', true)
     .order('title');
 
@@ -65,7 +68,7 @@ export default async function ProviderBookPage({ params }: PageProps) {
             Este provider não possui serviços ativos no momento.
           </p>
           <Link
-            href={`/providers/${params.id}`}
+            href={`/providers/${providerId}`}
             className="mt-6 inline-block px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
           >
             Voltar ao Perfil
@@ -80,7 +83,7 @@ export default async function ProviderBookPage({ params }: PageProps) {
       {/* Header */}
       <div className="mb-8">
         <Link
-          href={`/providers/${params.id}`}
+          href={`/providers/${providerId}`}
           className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 mb-4"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -110,14 +113,14 @@ export default async function ProviderBookPage({ params }: PageProps) {
 
       {/* Booking Form */}
       <BookingForm
-        providerId={params.id}
+        providerId={providerId}
         services={services}
         onSuccess={(bookingId) => {
           // Redirect to bookings page on success
           window.location.href = '/bookings';
         }}
         onCancel={() => {
-          window.location.href = `/providers/${params.id}`;
+          window.location.href = `/providers/${providerId}`;
         }}
       />
 

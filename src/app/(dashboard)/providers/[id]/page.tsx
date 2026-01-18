@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getCurrentUser } from '@/app/actions/users';
 import { getProviderStatus, getProviderSettings } from '@/app/actions/provider-status';
+import { createClient } from '@/lib/supabase/server';
 import ProviderNavigation from '@/components/providers/ProviderNavigation';
 import ProviderDashboardStats from '@/components/providers/ProviderDashboardStats';
 import ProviderStatusWidget from '@/components/provider-status/ProviderStatusWidget';
@@ -14,9 +15,9 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function ProviderDashboardPage({ params }: PageProps) {
@@ -26,11 +27,16 @@ export default async function ProviderDashboardPage({ params }: PageProps) {
     redirect('/login');
   }
 
-  const providerId = params.id;
+  // Await params (Next.js 15+)
+  const { id: providerId } = await params;
   const isOwner = user.id === providerId;
 
-  // Only owner can access dashboard
-  if (!isOwner) {
+  // Check if user is admin or above
+  const supabase = await createClient();
+  const { data: isAdmin } = await supabase.rpc('is_admin_or_above');
+
+  // Only owner or admin can access dashboard
+  if (!isOwner && !isAdmin) {
     redirect(`/providers/${providerId}/posts`);
   }
 
@@ -50,6 +56,20 @@ export default async function ProviderDashboardPage({ params }: PageProps) {
     <div className="space-y-6">
       {/* Navigation */}
       <ProviderNavigation providerId={providerId} />
+
+      {/* Admin viewing indicator */}
+      {!isOwner && isAdmin && (
+        <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 p-4">
+          <div className="flex items-center gap-3">
+            <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-sm text-blue-800 dark:text-blue-200">
+              Você está visualizando este perfil como administrador
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div>

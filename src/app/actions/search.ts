@@ -101,7 +101,6 @@ export async function getCategories() {
     const { data: categories, error } = await supabase
       .from('categories')
       .select('*')
-      .eq('is_active', true)
       .order('name');
 
     if (error) {
@@ -171,6 +170,15 @@ export async function getSuggestedProviders(params: {
 // Get provider details for search result
 export async function getProviderDetails(providerId: string) {
   try {
+    // Validate providerId
+    if (!providerId || providerId === 'undefined') {
+      console.error('Invalid providerId:', providerId);
+      return {
+        success: false,
+        error: 'Invalid provider ID',
+      };
+    }
+
     const supabase = await createClient();
 
     const { data: provider, error } = await supabase
@@ -187,7 +195,7 @@ export async function getProviderDetails(providerId: string) {
       .single();
 
     if (error) {
-      console.error('Error fetching provider details:', error);
+      console.error('Error fetching provider details:', error, 'Provider ID:', providerId);
       return {
         success: false,
         error: 'Prestador não encontrado',
@@ -199,7 +207,7 @@ export async function getProviderDetails(providerId: string) {
       provider,
     };
   } catch (error) {
-    console.error('Unexpected error fetching provider details:', error);
+    console.error('Unexpected error fetching provider details:', error, 'Provider ID:', providerId);
     return {
       success: false,
       error: 'Erro inesperado ao buscar detalhes',

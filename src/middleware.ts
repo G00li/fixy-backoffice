@@ -34,6 +34,7 @@ export async function middleware(request: NextRequest) {
     '/signup',
     '/reset-password',
     '/update-password',
+    '/auth/callback',
     '/unauthorized',
   ];
 
