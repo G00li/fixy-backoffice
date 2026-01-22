@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
-import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/app/actions/users';
+import { redirect, notFound } from 'next/navigation';
+import { getCurrentUserWithRole } from '@/app/actions/permissions';
 import { getPostDetail } from '@/app/actions/posts';
 import ProviderPostForm from '@/components/posts/ProviderPostForm';
 import Link from 'next/link';
@@ -12,55 +12,36 @@ export const metadata: Metadata = {
 
 interface PageProps {
   params: {
-    id: string;
     postId: string;
   };
 }
 
 export default async function EditPostPage({ params }: PageProps) {
-  // Get current user
-  const { user } = await getCurrentUser();
+  // Await params in Next.js 15+
+  const { postId } = await params;
+  
+  const { user } = await getCurrentUserWithRole();
+  
   if (!user) {
-    redirect('/login');
+    redirect('/signin');
   }
 
-  const providerId = params.id;
-  const postId = params.postId;
-
-  // Check if user is the provider
-  if (user.id !== providerId) {
-    redirect(`/providers/${providerId}/posts`);
+  if (user.role !== 'provider') {
+    redirect('/');
   }
 
-  // Get post details
+  // Fetch post details
   const result = await getPostDetail(postId);
-
+  
   if (!result.success || !result.post) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="rounded-lg bg-red-50 p-4 dark:bg-red-900/20">
-          <p className="text-sm text-red-800 dark:text-red-200">
-            {result.error || 'Post not found'}
-          </p>
-        </div>
-        <Link
-          href={`/providers/${providerId}/posts`}
-          className="mt-4 inline-flex items-center gap-2 text-sm text-brand-600 dark:text-brand-400 hover:underline"
-        >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Posts
-        </Link>
-      </div>
-    );
+    notFound();
   }
 
   const post = result.post;
 
-  // Verify ownership
+  // Check if user owns this post
   if (post.provider_id !== user.id) {
-    redirect(`/providers/${providerId}/posts`);
+    redirect('/provider/posts');
   }
 
   return (
@@ -68,7 +49,7 @@ export default async function EditPostPage({ params }: PageProps) {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
-          href={`/providers/${providerId}/posts`}
+          href={`/provider/posts/${post.id}`}
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
         >
           <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -110,7 +91,7 @@ export default async function EditPostPage({ params }: PageProps) {
           ))}
         </div>
         <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
-          Note: Media files cannot be changed after creation. You can only update the caption, tags, and service link.
+          Note: Media files cannot be changed after creation. You can only update the caption and tags.
         </p>
       </div>
 
@@ -121,12 +102,11 @@ export default async function EditPostPage({ params }: PageProps) {
           initialData={{
             id: post.id,
             caption: post.caption || undefined,
-            service_id: post.service_id || undefined,
             tags: post.tags || [],
             media_urls: post.media_urls,
             type: post.type,
           }}
-          providerId={providerId}
+          providerId={user.id}
         />
       </div>
     </div>

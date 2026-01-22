@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import ProviderDashboardStats from '@/components/providers/ProviderDashboardStats';
 import ProviderStatusWidget from '@/components/provider-status/ProviderStatusWidget';
 import { getCurrentUserWithRole } from '@/app/actions/permissions';
@@ -22,8 +21,7 @@ export default async function ProviderDashboardPage() {
   }
 
   return (
-    <ProtectedRoute requiredRole="provider">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
             Provider Dashboard
@@ -45,6 +43,6 @@ export default async function ProviderDashboardPage() {
         {/* Dashboard Stats */}
         <ProviderDashboardStats providerId={user.id} />
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }

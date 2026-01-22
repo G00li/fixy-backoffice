@@ -38,7 +38,6 @@ const ProviderPostForm: React.FC<ProviderPostFormProps> = ({
   const [caption, setCaption] = useState(initialData?.caption || '');
   const [tags, setTags] = useState<string[]>(initialData?.tags || []);
   const [tagInput, setTagInput] = useState('');
-  const [serviceId, setServiceId] = useState(initialData?.service_id || '');
 
   const handleMediaUpload = (url: string, type: 'image' | 'video') => {
     setMediaUrls(prev => [...prev, url]);
@@ -101,7 +100,6 @@ const ProviderPostForm: React.FC<ProviderPostFormProps> = ({
         type: postType,
         media_urls: mediaUrls,
         caption: caption || undefined,
-        service_id: serviceId || undefined,
         tags: tags.length > 0 ? tags : undefined,
       };
 
@@ -113,14 +111,13 @@ const ProviderPostForm: React.FC<ProviderPostFormProps> = ({
         return;
       }
 
-      router.push(`/providers/${providerId}/posts`);
+      router.push('/provider/posts');
       onSuccess?.();
     } else {
       // Edit mode
       const result = await updateProviderPost({
         postId: initialData!.id!,
         caption: caption || undefined,
-        service_id: serviceId || undefined,
         tags: tags.length > 0 ? tags : undefined,
       });
 
@@ -130,7 +127,7 @@ const ProviderPostForm: React.FC<ProviderPostFormProps> = ({
         return;
       }
 
-      router.push(`/providers/${providerId}/posts`);
+      router.push('/provider/posts');
       onSuccess?.();
     }
   };
@@ -266,32 +263,22 @@ const ProviderPostForm: React.FC<ProviderPostFormProps> = ({
         )}
       </div>
 
-      {/* Service Link (Optional) */}
-      <div>
-        <Label>Link to Service (Optional)</Label>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-          Connect this post to one of your services
-        </p>
-        <Input
-          type="text"
-          value={serviceId}
-          onChange={(e) => setServiceId(e.target.value)}
-          placeholder="Service ID (leave empty if not applicable)"
-        />
-      </div>
-
       {/* Actions */}
       <div className="flex items-center gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={() => {
+            if (onCancel) {
+              onCancel();
+            } else {
+              router.push('/provider/posts');
+            }
+          }}
+          disabled={loading}
+          className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
+        >
+          Cancel
+        </button>
         <button
           type="submit"
           disabled={loading || (mode === 'create' && mediaUrls.length === 0)}

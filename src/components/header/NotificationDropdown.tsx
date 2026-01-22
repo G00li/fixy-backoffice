@@ -11,29 +11,17 @@ import {
 } from '@/app/actions/notifications';
 import { Notification } from '@/types/notifications';
 import { formatTimeAgo, getPriorityColor, isUnread } from '@/types/notifications';
+import { useCurrentUser } from '@/hooks/useCurrentUser';
 
 export default function NotificationDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
-
-  // Fetch user ID on mount
-  useEffect(() => {
-    async function getUserId() {
-      try {
-        const response = await fetch('/api/auth/user');
-        const data = await response.json();
-        if (data.user?.id) {
-          setUserId(data.user.id);
-        }
-      } catch (error) {
-        console.error('Error fetching user:', error);
-      }
-    }
-    getUserId();
-  }, []);
+  
+  // Use existing hook to get current user
+  const { user, loading: userLoading } = useCurrentUser();
+  const userId = user?.id || null;
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {

@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import ProviderStatusToggle from '@/components/provider-status/ProviderStatusToggle';
 import ProviderScheduleManager from '@/components/provider-status/ProviderScheduleManager';
 import ProviderStatusWidget from '@/components/provider-status/ProviderStatusWidget';
@@ -23,8 +22,7 @@ export default async function ProviderStatusPage() {
   }
 
   return (
-    <ProtectedRoute requiredRole="provider">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
             My Status & Schedule
@@ -82,6 +80,6 @@ export default async function ProviderStatusPage() {
           </ul>
         </div>
       </div>
-    </ProtectedRoute>
+    </div>
   );
 }

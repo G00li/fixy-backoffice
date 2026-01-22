@@ -195,6 +195,9 @@ export async function getPostDetail(postId: string) {
   try {
     const supabase = await createClient();
     
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
     const { data: post, error } = await supabase
       .from('provider_posts')
       .select(`
@@ -215,12 +218,14 @@ export async function getPostDetail(postId: string) {
       return { success: false, error: 'Post not found' };
     }
 
-    // Increment view count (fire and forget)
-    supabase
-      .from('provider_posts')
-      .update({ views_count: (post.views_count || 0) + 1 })
-      .eq('id', postId)
-      .then();
+    // Increment view count only if viewer is not the post owner
+    if (user && user.id !== post.provider_id) {
+      supabase
+        .from('provider_posts')
+        .update({ views_count: (post.views_count || 0) + 1 })
+        .eq('id', postId)
+        .then();
+    }
 
     return { success: true, post: post as PostWithProvider };
   } catch (error) {
@@ -606,5 +611,494 @@ export async function uploadPostMedia(formData: FormData) {
   } catch (error) {
     console.error('Unexpected error uploading media:', error);
     return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// =====================================================
+// NEW FEATURES - POST PINNING
+// =====================================================
+
+/**
+ * Pin a post to provider profile
+ */
+export async function pinPost(postId: string) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Check if user owns the post
+    const { data: post } = await supabase
+      .from('provider_posts')
+      .select('provider_id')
+      .eq('id', postId)
+      .single();
+
+    if (!post || post.provider_id !== user.id) {
+      return { success: false, error: 'Post not found or unauthorized' };
+    }
+
+    // Call pin_post function
+    const { data, error } = await supabase.rpc('pin_post', {
+      post_uuid: postId,
+      provider_uuid: user.id,
+    });
+
+    if (error) {
+      console.error('Error pinning post:', error);
+      return { success: false, error: 'Failed to pin post' };
+    }
+
+    if (!data.success) {
+      return { success: false, error: data.error || 'Failed to pin post' };
+    }
+
+    revalidatePath('/providers/[id]/posts', 'page');
+    
+    return { 
+      success: true, 
+      pinned_count: data.pinned_count,
+      max_allowed: data.max_allowed 
+    };
+  } catch (error) {
+    console.error('Unexpected error pinning post:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Unpin a post from provider profile
+ */
+export async function unpinPost(postId: string) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Check if user owns the post
+    const { data: post } = await supabase
+      .from('provider_posts')
+      .select('provider_id')
+      .eq('id', postId)
+      .single();
+
+    if (!post || post.provider_id !== user.id) {
+      return { success: false, error: 'Post not found or unauthorized' };
+    }
+
+    // Call unpin_post function
+    const { data, error } = await supabase.rpc('unpin_post', {
+      post_uuid: postId,
+      provider_uuid: user.id,
+    });
+
+    if (error) {
+      console.error('Error unpinning post:', error);
+      return { success: false, error: 'Failed to unpin post' };
+    }
+
+    revalidatePath('/providers/[id]/posts', 'page');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error unpinning post:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// =====================================================
+// NEW FEATURES - COMMENT THREADING
+// =====================================================
+
+/**
+ * Reply to a comment (threading)
+ */
+export async function replyToComment(params: {
+  postId: string;
+  parentCommentId: string;
+  comment: string;
+}) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Validate comment
+    if (!params.comment || params.comment.trim().length === 0) {
+      return { success: false, error: 'Comment cannot be empty' };
+    }
+
+    if (params.comment.length > 500) {
+      return { success: false, error: 'Comment must be less than 500 characters' };
+    }
+
+    // Sanitize comment
+    const sanitizedComment = sanitizeCaption(params.comment);
+
+    // Create reply
+    const { error: commentError } = await supabase
+      .from('post_comments')
+      .insert({
+        post_id: params.postId,
+        user_id: user.id,
+        comment: sanitizedComment,
+        parent_comment_id: params.parentCommentId,
+      });
+
+    if (commentError) {
+      console.error('Error creating reply:', commentError);
+      return { success: false, error: 'Failed to create reply' };
+    }
+
+    revalidatePath('/providers/[id]/posts', 'page');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error creating reply:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Get comment replies (nested comments)
+ */
+export async function getCommentReplies(params: {
+  commentId: string;
+  page?: number;
+  limit?: number;
+}) {
+  try {
+    const supabase = await createClient();
+    
+    const page = params.page || 1;
+    const limit = params.limit || 10;
+    const offset = (page - 1) * limit;
+
+    const { data: replies, error, count } = await supabase
+      .from('post_comments')
+      .select(`
+        *,
+        user:profiles!post_comments_user_id_fkey (
+          full_name,
+          avatar_url
+        )
+      `, { count: 'exact' })
+      .eq('parent_comment_id', params.commentId)
+      .order('created_at', { ascending: true })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      console.error('Error fetching replies:', error);
+      return { success: false, error: 'Failed to fetch replies' };
+    }
+
+    return {
+      success: true,
+      replies: replies || [],
+      total: count || 0,
+      page,
+      limit,
+      totalPages: Math.ceil((count || 0) / limit),
+    };
+  } catch (error) {
+    console.error('Unexpected error fetching replies:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Update comment
+ */
+export async function updateComment(commentId: string, comment: string) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Check if user owns the comment
+    const { data: existingComment } = await supabase
+      .from('post_comments')
+      .select('user_id')
+      .eq('id', commentId)
+      .single();
+
+    if (!existingComment || existingComment.user_id !== user.id) {
+      return { success: false, error: 'Comment not found or unauthorized' };
+    }
+
+    // Validate comment
+    if (!comment || comment.trim().length === 0) {
+      return { success: false, error: 'Comment cannot be empty' };
+    }
+
+    if (comment.length > 500) {
+      return { success: false, error: 'Comment must be less than 500 characters' };
+    }
+
+    // Sanitize comment
+    const sanitizedComment = sanitizeCaption(comment);
+
+    // Update comment
+    const { error: updateError } = await supabase
+      .from('post_comments')
+      .update({
+        comment: sanitizedComment,
+        is_edited: true,
+        edited_at: new Date().toISOString(),
+      })
+      .eq('id', commentId);
+
+    if (updateError) {
+      console.error('Error updating comment:', updateError);
+      return { success: false, error: 'Failed to update comment' };
+    }
+
+    revalidatePath('/providers/[id]/posts', 'page');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error updating comment:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Delete comment
+ */
+export async function deleteComment(commentId: string) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Check if user owns the comment
+    const { data: comment } = await supabase
+      .from('post_comments')
+      .select('user_id')
+      .eq('id', commentId)
+      .single();
+
+    if (!comment || comment.user_id !== user.id) {
+      return { success: false, error: 'Comment not found or unauthorized' };
+    }
+
+    // Delete comment (cascade will handle replies)
+    const { error: deleteError } = await supabase
+      .from('post_comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (deleteError) {
+      console.error('Error deleting comment:', deleteError);
+      return { success: false, error: 'Failed to delete comment' };
+    }
+
+    revalidatePath('/providers/[id]/posts', 'page');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error deleting comment:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+// =====================================================
+// NEW FEATURES - COMMENT LIKES
+// =====================================================
+
+/**
+ * Like a comment
+ */
+export async function likeComment(commentId: string) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Check if already liked
+    const { data: existingLike } = await supabase
+      .from('comment_likes')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('comment_id', commentId)
+      .single();
+
+    if (existingLike) {
+      return { success: false, error: 'Already liked' };
+    }
+
+    // Create like
+    const { error: likeError } = await supabase
+      .from('comment_likes')
+      .insert({
+        user_id: user.id,
+        comment_id: commentId,
+      });
+
+    if (likeError) {
+      console.error('Error liking comment:', likeError);
+      return { success: false, error: 'Failed to like comment' };
+    }
+
+    revalidatePath('/providers/[id]/posts', 'page');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error liking comment:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Unlike a comment
+ */
+export async function unlikeComment(commentId: string) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    // Delete like
+    const { error: unlikeError } = await supabase
+      .from('comment_likes')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('comment_id', commentId);
+
+    if (unlikeError) {
+      console.error('Error unliking comment:', unlikeError);
+      return { success: false, error: 'Failed to unlike comment' };
+    }
+
+    revalidatePath('/providers/[id]/posts', 'page');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error unliking comment:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Check if user liked comment
+ */
+export async function checkIfCommentLiked(commentId: string) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: true, liked: false };
+    }
+
+    const { data: like } = await supabase
+      .from('comment_likes')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('comment_id', commentId)
+      .single();
+
+    return { success: true, liked: !!like };
+  } catch (error) {
+    console.error('Unexpected error checking comment like:', error);
+    return { success: true, liked: false };
+  }
+}
+
+// =====================================================
+// NEW FEATURES - OPTIMIZED FEED
+// =====================================================
+
+/**
+ * Get posts feed using optimized SQL function
+ */
+export async function getPostsFeed(params: {
+  providerId?: string;
+  followingOnly?: boolean;
+  page?: number;
+  limit?: number;
+}) {
+  try {
+    const supabase = await createClient();
+    
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const page = params.page || 1;
+    const limit = params.limit || 20;
+    const offset = (page - 1) * limit;
+
+    // Call optimized feed function
+    const { data: posts, error } = await supabase.rpc('get_posts_feed', {
+      user_uuid: user?.id || null,
+      limit_count: limit,
+      offset_count: offset,
+      filter_provider_id: params.providerId || null,
+      filter_following_only: params.followingOnly || false,
+    });
+
+    if (error) {
+      console.error('Error fetching feed:', error);
+      return { success: false, error: 'Failed to fetch feed' };
+    }
+
+    return {
+      success: true,
+      posts: posts || [],
+      page,
+      limit,
+      has_more: posts && posts.length === limit,
+    };
+  } catch (error) {
+    console.error('Unexpected error fetching feed:', error);
+    return { success: false, error: 'An unexpected error occurred' };
+  }
+}
+
+/**
+ * Increment post views
+ */
+export async function incrementPostViews(postId: string) {
+  try {
+    const supabase = await createClient();
+    
+    // Call increment function (fire and forget)
+    supabase.rpc('increment_post_views', {
+      post_uuid: postId,
+    }).then();
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error incrementing views:', error);
+    return { success: true }; // Don't fail on view increment
   }
 }

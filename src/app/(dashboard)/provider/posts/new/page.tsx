@@ -1,32 +1,24 @@
 import { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getCurrentUser } from '@/app/actions/users';
+import { getCurrentUserWithRole } from '@/app/actions/permissions';
 import ProviderPostForm from '@/components/posts/ProviderPostForm';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Create Post | Fixy Backoffice',
-  description: 'Create a new post',
+  description: 'Create a new post for your portfolio',
 };
 
-interface PageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default async function NewPostPage({ params }: PageProps) {
+export default async function NewPostPage() {
   // Get current user
-  const { user } = await getCurrentUser();
+  const { user } = await getCurrentUserWithRole();
+  
   if (!user) {
-    redirect('/login');
+    redirect('/signin');
   }
 
-  const providerId = params.id;
-
-  // Check if user is the provider
-  if (user.id !== providerId) {
-    redirect(`/providers/${providerId}/posts`);
+  if (user.role !== 'provider') {
+    redirect('/');
   }
 
   return (
@@ -34,7 +26,7 @@ export default async function NewPostPage({ params }: PageProps) {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link
-          href={`/providers/${providerId}/posts`}
+          href="/provider/posts"
           className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
         >
           <svg className="w-5 h-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -55,7 +47,7 @@ export default async function NewPostPage({ params }: PageProps) {
       <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6">
         <ProviderPostForm
           mode="create"
-          providerId={providerId}
+          providerId={user.id}
         />
       </div>
 
