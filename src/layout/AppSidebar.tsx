@@ -33,13 +33,7 @@ const navItems: NavItem[] = [
     icon: <GridIcon />,
     name: "Dashboard",
     path: "/",
-    requiredRoles: ['super_admin', 'admin', 'support', 'client'],
-  },
-  {
-    icon: <GridIcon />,
-    name: "Provider Dashboard",
-    path: "/provider/dashboard",
-    requiredRoles: ['provider'],
+    requiredRoles: ['super_admin', 'admin', 'support', 'provider', 'client'],
   },
   {
     icon: <CalenderIcon />,

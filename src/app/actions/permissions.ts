@@ -178,7 +178,7 @@ export async function getDefaultRedirectPath(): Promise<string> {
     case 'support':
       return '/'; // Support dashboard
     case 'provider':
-      return '/provider/dashboard'; // Provider dashboard
+      return '/'; // Provider dashboard
     case 'client':
       return '/profile'; // Client profile
     default:
