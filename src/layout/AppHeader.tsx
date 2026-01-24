@@ -169,7 +169,7 @@ const AppHeader: React.FC = () => {
 
             {/* <!-- Provider Status Quick Toggle --> */}
             {user?.role === 'provider' && (
-              <ProviderStatusQuickToggle providerId={user.id} />
+              <ProviderStatusQuickToggle />
             )}
             {/* <!-- Provider Status Quick Toggle --> */}
 

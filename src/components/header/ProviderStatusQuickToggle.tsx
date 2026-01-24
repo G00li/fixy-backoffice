@@ -5,10 +5,6 @@ import { StatusType, STATUS_TYPE_LABELS } from '@/types/provider-status';
 import { showToast, toastMessages } from '@/lib/toast';
 import { useProviderStatus } from '@/contexts/ProviderStatusContext';
 
-interface ProviderStatusQuickToggleProps {
-  providerId?: string; // Now optional since we get it from context
-}
-
 const STATUS_CONFIG = {
   open: {
     color: 'text-green-600 dark:text-green-400',
@@ -52,9 +48,7 @@ const STATUS_CONFIG = {
   },
 };
 
-export default function ProviderStatusQuickToggle({
-  providerId,
-}: ProviderStatusQuickToggleProps) {
+export default function ProviderStatusQuickToggle() {
   const { status, loading, updating, updateStatus } = useProviderStatus();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
