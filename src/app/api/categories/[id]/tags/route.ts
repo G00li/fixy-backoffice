@@ -4,14 +4,15 @@ import type { ApiResponse, CategorySpecialtyTag } from '@/types/provider-special
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const limit = searchParams.get('limit');
 
     const tags = await getCategoryTags(
-      params.id,
+      id,
       limit ? parseInt(limit) : 20
     );
 

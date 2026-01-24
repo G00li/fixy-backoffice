@@ -11,7 +11,7 @@ export function ReviewsChart({ data }: ReviewsChartProps) {
   const series = [
     {
       name: 'Avaliação Média',
-      data: data.map((d) => d.average_rating),
+      data: data.map((d) => Number(d.average_rating.toFixed(1))),
     },
     {
       name: 'Total de Avaliações',
@@ -23,6 +23,7 @@ export function ReviewsChart({ data }: ReviewsChartProps) {
 
   const yaxis = [
     {
+      seriesName: 'Avaliação Média',
       title: {
         text: 'Avaliação Média',
         style: {
@@ -32,7 +33,7 @@ export function ReviewsChart({ data }: ReviewsChartProps) {
       },
       labels: {
         style: {
-          colors: '#6B7280',
+          colors: ['#6B7280'],
           fontSize: '12px',
         },
         formatter: (val: number) => val.toFixed(1),
@@ -41,6 +42,7 @@ export function ReviewsChart({ data }: ReviewsChartProps) {
       max: 5,
     },
     {
+      seriesName: 'Total de Avaliações',
       opposite: true,
       title: {
         text: 'Total de Avaliações',
@@ -51,9 +53,10 @@ export function ReviewsChart({ data }: ReviewsChartProps) {
       },
       labels: {
         style: {
-          colors: '#6B7280',
+          colors: ['#6B7280'],
           fontSize: '12px',
         },
+        formatter: (val: number) => Math.round(val).toString(),
       },
     },
   ];
@@ -73,10 +76,13 @@ export function ReviewsChart({ data }: ReviewsChartProps) {
       height={310}
       yaxis={yaxis}
       tooltipFormatter={(val: number, opts: any) => {
-        if (opts.seriesIndex === 0) {
-          return val.toFixed(1) + ' estrelas';
+        const seriesIndex = opts?.seriesIndex ?? 0;
+        if (seriesIndex === 0) {
+          // Avaliação Média
+          return `${val.toFixed(1)} ⭐`;
         }
-        return val + ' avaliações';
+        // Total de Avaliações
+        return `${Math.round(val)} avaliações`;
       }}
     />
   );

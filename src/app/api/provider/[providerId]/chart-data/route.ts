@@ -19,6 +19,7 @@ export async function GET(
       months.push({
         month: monthNames[date.getMonth()],
         year: date.getFullYear(),
+        monthIndex: date.getMonth(),
         startDate: new Date(date.getFullYear(), date.getMonth(), 1).toISOString(),
         endDate: new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59).toISOString(),
       });
@@ -36,13 +37,15 @@ export async function GET(
     }
 
     // Aggregate bookings by month and status
-    const bookingsData = months.map(({ month, startDate, endDate }) => {
+    const bookingsData = months.map(({ month, year, monthIndex, startDate, endDate }) => {
       const monthBookings = bookings?.filter(
         (b) => b.created_at >= startDate && b.created_at <= endDate
       ) || [];
 
       return {
         month,
+        year,
+        monthIndex,
         pending: monthBookings.filter((b) => b.status === 'pending').length,
         confirmed: monthBookings.filter((b) => b.status === 'confirmed').length,
         completed: monthBookings.filter((b) => b.status === 'completed').length,

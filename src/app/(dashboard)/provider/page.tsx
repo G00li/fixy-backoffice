@@ -92,7 +92,7 @@ export default function ProviderDashboardPage() {
           {chartLoading ? (
             <div className="h-[400px] animate-pulse rounded-2xl border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800" />
           ) : chartData?.bookings ? (
-            <BookingsChart data={chartData.bookings} />
+            <BookingsChart data={chartData.bookings} providerId={user.id} />
           ) : (
             <div className="flex h-[400px] items-center justify-center rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
               <p className="text-sm text-gray-500 dark:text-gray-400">

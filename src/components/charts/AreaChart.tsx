@@ -31,7 +31,7 @@ export function AreaChart({
   colors = ['#465FFF', '#9CB9FF'],
   height = 310,
   yaxis,
-  tooltipFormatter,
+  tooltipFormatter = (val: number) => `${val}`,
 }: AreaChartProps) {
   const options: ApexOptions = {
     legend: {
@@ -91,14 +91,15 @@ export function AreaChart({
     tooltip: {
       theme: 'dark',
       enabled: true,
+      shared: true,
+      intersect: false,
+      followCursor: true,
       x: {
         show: true,
       },
-      y: tooltipFormatter
-        ? {
-            formatter: tooltipFormatter,
-          }
-        : undefined,
+      y: {
+        formatter: tooltipFormatter,
+      },
     },
     xaxis: {
       type: 'category',

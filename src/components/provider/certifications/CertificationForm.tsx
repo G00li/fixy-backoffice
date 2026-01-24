@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useCreateCertification, useUpdateCertification } from '@/hooks/useProviderCertifications';
 import type { ProviderCertification } from '@/types/provider-specialties';
+import { ModalSimple } from '@/components/ui/modal';
 import Label from '@/components/form/Label';
 import Input from '@/components/form/input/InputField';
 
@@ -89,24 +90,21 @@ export function CertificationForm({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white p-6 shadow-xl dark:border-gray-800 dark:bg-gray-900 lg:p-8">
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-white/90">
-            {editingCertification ? 'Editar Certificação' : 'Nova Certificação'}
-          </h2>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {editingCertification 
-              ? 'Atualize as informações da certificação' 
-              : 'Adicione uma nova certificação ao seu perfil profissional'}
-          </p>
+    <ModalSimple
+      isOpen={true}
+      onClose={onClose}
+      title={editingCertification ? 'Editar Certificação' : 'Nova Certificação'}
+      subtitle={editingCertification 
+        ? 'Atualize as informações da certificação' 
+        : 'Adicione uma nova certificação ao seu perfil profissional'}
+      maxWidth="2xl"
+      closeOnBackdrop={false}
+    >
+      {error && (
+        <div className="mb-6 rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
+          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
         </div>
-
-        {error && (
-          <div className="mb-6 rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
-            <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-          </div>
-        )}
+      )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
@@ -223,7 +221,6 @@ export function CertificationForm({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+      </ModalSimple>
   );
 }

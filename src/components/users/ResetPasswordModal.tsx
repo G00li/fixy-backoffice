@@ -4,6 +4,14 @@ import Input from "../form/input/InputField";
 import Label from "../form/Label";
 import Button from "../ui/button/Button";
 import { generateSecurePassword, copyToClipboard } from "@/lib/password-generator";
+import {
+  Modal,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalAlert,
+  ModalUserInfo,
+} from "../ui/modal";
 
 interface ResetPasswordModalProps {
   isOpen: boolean;
@@ -128,63 +136,26 @@ export default function ResetPasswordModal({
   };
 
   return (
-    <div className="fixed inset-0 z-999999 flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-gray-800 max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="mb-6 flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30">
-              <svg className="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Reset User Password
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                This action requires confirmation
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <Modal isOpen={isOpen} onClose={handleClose} size="lg" closeOnBackdrop={false}>
+      <ModalHeader
+        title="Reset User Password"
+        subtitle="This action requires confirmation"
+        icon={
+          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        }
+        iconBgColor="bg-orange-100 dark:bg-orange-900/30"
+        iconColor="text-orange-600 dark:text-orange-400"
+      />
 
+      <ModalBody>
         {/* User Info */}
-        <div className="mb-6 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
-          <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">
-            You are about to reset the password for:
-          </p>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-900/30">
-              <span className="text-sm font-medium text-brand-700 dark:text-brand-300">
-                {user.full_name?.charAt(0).toUpperCase() || user.email?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            </div>
-            <div>
-              <p className="font-medium text-gray-900 dark:text-white">
-                {user.full_name || 'No name'}
-              </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {user.email}
-              </p>
-            </div>
-          </div>
-          {user.role && (
-            <div className="mt-2">
-              <span className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-medium text-brand-800 dark:bg-brand-900/30 dark:text-brand-300">
-                {user.role}
-              </span>
-            </div>
-          )}
-        </div>
+        <ModalUserInfo
+          user={user}
+          description="You are about to reset the password for:"
+          className="mb-6"
+        />
 
         {/* Password Mode Selection */}
         <div className="mb-6">
@@ -236,14 +207,9 @@ export default function ResetPasswordModal({
 
         {/* Error Message */}
         {error && (
-          <div className="mb-4 rounded-lg bg-red-50 p-3 dark:bg-red-900/20">
-            <div className="flex items-start gap-3">
-              <svg className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-            </div>
-          </div>
+          <ModalAlert type="error" className="mb-4">
+            {error}
+          </ModalAlert>
         )}
 
         {/* Form */}
@@ -398,42 +364,32 @@ export default function ResetPasswordModal({
           )}
 
           {/* Warning */}
-          <div className="rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-900/50 dark:bg-orange-900/20">
-            <div className="flex gap-3">
-              <svg className="h-5 w-5 flex-shrink-0 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-orange-800 dark:text-orange-300">
-                  Warning: This action will:
-                </p>
-                <ul className="mt-2 space-y-1 text-sm text-orange-700 dark:text-orange-400">
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5">•</span>
-                    <span>Immediately change the user's password</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5">•</span>
-                    <span>Log out the user from all devices</span>
-                  </li>
-                  {passwordMode === 'temporary' && (
-                    <li className="flex items-start gap-2">
-                      <span className="mt-0.5">•</span>
-                      <span>Force user to change password on next login</span>
-                    </li>
-                  )}
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5">•</span>
-                    <span>Send a notification to the user</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="mt-0.5">•</span>
-                    <span>Be recorded in the audit log</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          <ModalAlert type="warning" title="Warning: This action will:" className="mb-4">
+            <ul className="mt-2 space-y-1 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5">•</span>
+                <span>Immediately change the user's password</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5">•</span>
+                <span>Log out the user from all devices</span>
+              </li>
+              {passwordMode === 'temporary' && (
+                <li className="flex items-start gap-2">
+                  <span className="mt-0.5">•</span>
+                  <span>Force user to change password on next login</span>
+                </li>
+              )}
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5">•</span>
+                <span>Send a notification to the user</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5">•</span>
+                <span>Be recorded in the audit log</span>
+              </li>
+            </ul>
+          </ModalAlert>
 
           {/* Confirmation Checkbox */}
           <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900/50">
@@ -448,33 +404,32 @@ export default function ResetPasswordModal({
               I confirm that I want to reset this user's password and understand that this action will be logged
             </label>
           </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={loading}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={
-                loading || 
-                !confirmed || 
-                (passwordMode === 'custom' && (!newPassword || !confirmPassword || newPassword !== confirmPassword)) ||
-                (passwordMode === 'temporary' && !generatedPassword)
-              }
-              className="flex-1 bg-orange-600 hover:bg-orange-700"
-            >
-              {loading ? 'Resetting...' : 'Reset Password'}
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+      </ModalBody>
+
+      <ModalFooter>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleClose}
+          disabled={loading}
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          onClick={handleSubmit}
+          disabled={
+            loading || 
+            !confirmed || 
+            (passwordMode === 'custom' && (!newPassword || !confirmPassword || newPassword !== confirmPassword)) ||
+            (passwordMode === 'temporary' && !generatedPassword)
+          }
+          className="bg-orange-600 hover:bg-orange-700"
+        >
+          {loading ? 'Resetting...' : 'Reset Password'}
+        </Button>
+      </ModalFooter>
+    </Modal>
   );
 }
