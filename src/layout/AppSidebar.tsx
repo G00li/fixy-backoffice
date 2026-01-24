@@ -67,9 +67,21 @@ const navItems: NavItem[] = [
   },
   {
     icon: <UserCircleIcon />,
+    name: "My Profile",
+    requiredRoles: ['provider'],
+    subItems: [
+      { name: "Dashboard", path: "/provider", pro: false },
+      { name: "Profile", path: "/provider/profile", pro: false },
+      { name: "Specialties", path: "/provider/profile/specialties", pro: false },
+      { name: "Portfolio", path: "/provider/profile/portfolio", pro: false },
+      { name: "Certifications", path: "/provider/profile/certifications", pro: false },
+    ],
+  },
+  {
+    icon: <UserCircleIcon />,
     name: "Profile",
     path: "/profile",
-    requiredRoles: ['super_admin', 'admin', 'support', 'provider', 'client'],
+    requiredRoles: ['super_admin', 'admin', 'support', 'client'],
   },
 
   {
