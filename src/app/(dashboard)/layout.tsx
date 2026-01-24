@@ -2,19 +2,17 @@
 
 import { useMemo } from "react";
 import { useSidebar } from "@/context/SidebarContext";
-import { UserProvider } from "@/context/UserContext";
+import { UserProvider, useUser } from "@/context/UserContext";
+import { ProviderStatusProvider } from "@/contexts/ProviderStatusContext";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
 import PageTransition from "@/components/common/PageTransition";
 import React from "react";
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const { user } = useUser();
 
   // Memoize margin calculation to prevent unnecessary recalculations
   const mainContentMargin = useMemo(() => {
@@ -23,28 +21,49 @@ export default function DashboardLayout({
     return "lg:ml-[90px]";
   }, [isMobileOpen, isExpanded, isHovered]);
 
-  return (
-    <UserProvider>
-      <div className="min-h-screen xl:flex">
-        {/* Sidebar and Backdrop - These stay mounted and never unmount */}
-        <AppSidebar />
-        <Backdrop />
+  const content = (
+    <div className="min-h-screen xl:flex">
+      {/* Sidebar and Backdrop - These stay mounted and never unmount */}
+      <AppSidebar />
+      <Backdrop />
+      
+      {/* Main Content Area */}
+      <div
+        className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}
+      >
+        {/* Header - Stays mounted and never unmounts */}
+        <AppHeader />
         
-        {/* Main Content Area */}
-        <div
-          className={`flex-1 transition-all duration-300 ease-in-out ${mainContentMargin}`}
-        >
-          {/* Header - Stays mounted and never unmounts */}
-          <AppHeader />
-          
-          {/* Only page content transitions - Sidebar and Header remain static */}
-          <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">
-            <PageTransition>
-              {children}
-            </PageTransition>
-          </div>
+        {/* Only page content transitions - Sidebar and Header remain static */}
+        <div className="p-4 mx-auto max-w-(--breakpoint-2xl) md:p-6">
+          <PageTransition>
+            {children}
+          </PageTransition>
         </div>
       </div>
+    </div>
+  );
+
+  // Wrap with ProviderStatusProvider only for providers
+  if (user?.role === 'provider') {
+    return (
+      <ProviderStatusProvider providerId={user.id}>
+        {content}
+      </ProviderStatusProvider>
+    );
+  }
+
+  return content;
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <UserProvider>
+      <DashboardContent>{children}</DashboardContent>
     </UserProvider>
   );
 }

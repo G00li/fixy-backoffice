@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getProviderStats, type ProviderStats } from '@/app/actions/provider-stats';
 
 interface StatCardProps {
   title: string;
@@ -93,36 +94,40 @@ export default function ProviderDashboardStats({
   providerId,
   className = '',
 }: ProviderDashboardStatsProps) {
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<ProviderStats>({
     totalPosts: 0,
     totalViews: 0,
     averageRating: 0,
     totalBookings: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // TODO: Fetch real stats from API
-    // For now, using mock data
     const fetchStats = async () => {
       try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 500));
+        setLoading(true);
+        setError(null);
         
-        setStats({
-          totalPosts: 0,
-          totalViews: 0,
-          averageRating: 0,
-          totalBookings: 0,
-        });
+        const result = await getProviderStats(providerId);
+        
+        if (result.success && result.stats) {
+          setStats(result.stats);
+        } else {
+          setError(result.error || 'Failed to fetch stats');
+          console.error('Error fetching provider stats:', result.error);
+        }
       } catch (error) {
-        console.error('Error fetching stats:', error);
+        console.error('Unexpected error fetching stats:', error);
+        setError('An unexpected error occurred');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchStats();
+    if (providerId) {
+      fetchStats();
+    }
   }, [providerId]);
 
   if (loading) {
@@ -134,6 +139,16 @@ export default function ProviderDashboardStats({
             className="animate-pulse rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 h-32"
           />
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 ${className}`}>
+        <p className="text-sm text-red-600 dark:text-red-400">
+          Error loading statistics: {error}
+        </p>
       </div>
     );
   }

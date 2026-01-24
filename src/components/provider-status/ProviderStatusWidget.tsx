@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { TimeIcon } from '@/icons';
-import { ProviderStatus, STATUS_INDICATOR_COLORS } from '@/types/provider-status';
+import { STATUS_INDICATOR_COLORS } from '@/types/provider-status';
 import StatusBadge from './StatusBadge';
-import { getProviderStatus } from '@/app/actions/provider-status';
+import { useProviderStatus } from '@/contexts/ProviderStatusContext';
 
 interface ProviderStatusWidgetProps {
-  providerId: string;
+  providerId?: string; // Now optional since we get it from context
   showMessage?: boolean;
   showLastUpdate?: boolean;
   className?: string;
@@ -19,20 +18,7 @@ export default function ProviderStatusWidget({
   showLastUpdate = true,
   className = '',
 }: ProviderStatusWidgetProps) {
-  const [status, setStatus] = useState<ProviderStatus | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadStatus = async () => {
-      const result = await getProviderStatus(providerId);
-      if (result.success && result.status) {
-        setStatus(result.status);
-      }
-      setLoading(false);
-    };
-
-    loadStatus();
-  }, [providerId]);
+  const { status, loading } = useProviderStatus();
 
   if (loading) {
     return (

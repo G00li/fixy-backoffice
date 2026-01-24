@@ -1,16 +1,12 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { StatusType, STATUS_TYPE_LABELS } from '@/types/provider-status';
-import {
-  getProviderStatus,
-  updateProviderStatus,
-} from '@/app/actions/provider-status';
 import { showToast, toastMessages } from '@/lib/toast';
+import { useProviderStatus } from '@/contexts/ProviderStatusContext';
 
 interface ProviderStatusQuickToggleProps {
-  providerId: string;
+  providerId?: string; // Now optional since we get it from context
 }
 
 const STATUS_CONFIG = {
@@ -59,62 +55,23 @@ const STATUS_CONFIG = {
 export default function ProviderStatusQuickToggle({
   providerId,
 }: ProviderStatusQuickToggleProps) {
-  const [currentStatus, setCurrentStatus] = useState<StatusType>('closed');
+  const { status, loading, updating, updateStatus } = useProviderStatus();
   const [isOpen, setIsOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
-  const isManualUpdateRef = useRef(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const prevStatusRef = useRef<StatusType | null>(null);
 
-  // Load current status and setup Realtime subscription
+  const currentStatus = status?.status_type || 'closed';
+
+  // Track status changes for auto-change notifications
   useEffect(() => {
-    const supabase = createClient();
-    
-    const loadStatus = async () => {
-      const result = await getProviderStatus(providerId);
-      if (result.success && result.status) {
-        setCurrentStatus(result.status.status_type);
-      }
-      setLoading(false);
-    };
-
-    loadStatus();
-
-    // Subscribe to realtime changes for this provider's status
-    const channel = supabase
-      .channel(`provider-status-${providerId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'provider_status',
-          filter: `provider_id=eq.${providerId}`,
-        },
-        (payload) => {
-          const newStatus = payload.new as { status_type: StatusType; is_open: boolean };
-          const oldStatus = payload.old as { status_type: StatusType };
-          
-          // Only show toast if status actually changed AND it wasn't a manual update
-          if (newStatus.status_type !== oldStatus.status_type) {
-            setCurrentStatus(newStatus.status_type);
-            
-            // Only show "auto changed" toast if it wasn't a manual update
-            if (!isManualUpdateRef.current) {
-              showToast.success(
-                toastMessages.status.autoChanged(STATUS_TYPE_LABELS[newStatus.status_type])
-              );
-            }
-          }
-        }
-      )
-      .subscribe();
-
-    // Cleanup subscription on unmount
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [providerId]);
+    if (status && prevStatusRef.current && prevStatusRef.current !== status.status_type) {
+      // Status changed - could be from automation
+      // We don't show toast here anymore as it's handled by the update action
+    }
+    if (status) {
+      prevStatusRef.current = status.status_type;
+    }
+  }, [status]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -136,17 +93,12 @@ export default function ProviderStatusQuickToggle({
   const handleStatusChange = async (newStatus: StatusType) => {
     if (newStatus === currentStatus || updating) return;
 
-    setUpdating(true);
-    isManualUpdateRef.current = true; // Mark as manual update using ref
     const toastId = showToast.loading('Atualizando status...');
     
     try {
-      const result = await updateProviderStatus({
-        status_type: newStatus,
-      });
+      const result = await updateStatus(newStatus);
 
-      if (result.success && result.status) {
-        setCurrentStatus(result.status.status_type);
+      if (result.success) {
         setIsOpen(false);
         showToast.dismiss(toastId);
         showToast.success(toastMessages.status.updated);
@@ -158,12 +110,6 @@ export default function ProviderStatusQuickToggle({
       console.error('Error updating status:', error);
       showToast.dismiss(toastId);
       showToast.error(toastMessages.status.updateError);
-    } finally {
-      setUpdating(false);
-      // Reset manual update flag after a short delay
-      setTimeout(() => {
-        isManualUpdateRef.current = false;
-      }, 2000);
     }
   };
 
