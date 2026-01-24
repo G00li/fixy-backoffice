@@ -4,14 +4,14 @@ import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import ProviderStatusQuickToggle from "@/components/header/ProviderStatusQuickToggle";
 import { useSidebar } from "@/context/SidebarContext";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUser } from "@/context/UserContext";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useState ,useEffect,useRef} from "react";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
-  const { user } = useCurrentUser();
+  const { user } = useUser();
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
 
   const handleToggle = () => {

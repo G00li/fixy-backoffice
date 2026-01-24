@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
-import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useUser } from "@/context/UserContext";
 import {
   BoxCubeIcon,
   CalenderIcon,
@@ -138,7 +138,7 @@ const othersItems: NavItem[] = [
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
   const pathname = usePathname();
-  const { user } = useCurrentUser();
+  const { user } = useUser();
 
   // Filter menu items based on user role - memoized to prevent infinite loops
   const filterMenuItems = useCallback((items: NavItem[]): NavItem[] => {

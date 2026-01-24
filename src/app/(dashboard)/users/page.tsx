@@ -1,8 +1,8 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import { getUserList, getCurrentUser } from '@/app/actions/users';
+import { getUserList } from '@/app/actions/users';
 import RoleBadge from '@/components/users/RoleBadge';
-import { redirect } from 'next/navigation';
+import AuthGuard from '@/components/auth/AuthGuard';
 import {
   Table,
   TableBody,
@@ -20,12 +20,6 @@ interface SearchParams {
 }
 
 async function UserListContent({ searchParams }: { searchParams: SearchParams }) {
-  // Get current user
-  const currentUserResult = await getCurrentUser();
-  if (!currentUserResult.success) {
-    redirect('/signin');
-  }
-
   const page = parseInt(searchParams.page || '1');
   const search = searchParams.search || '';
   const role = searchParams.role || '';
@@ -384,14 +378,16 @@ export default async function UsersPage({
   const params = await searchParams;
   
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-r-transparent"></div>
-        </div>
-      }
-    >
-      <UserListContent searchParams={params} />
-    </Suspense>
+    <AuthGuard allowedRoles={['super_admin', 'admin']}>
+      <Suspense
+        fallback={
+          <div className="flex min-h-screen items-center justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-500 border-r-transparent"></div>
+          </div>
+        }
+      >
+        <UserListContent searchParams={params} />
+      </Suspense>
+    </AuthGuard>
   );
 }

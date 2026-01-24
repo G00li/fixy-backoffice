@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useUser } from '@/context/UserContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,7 +13,7 @@ interface ProtectedRouteProps {
 
 /**
  * Component to protect routes based on user role
- * Uses useCurrentUser hook that reuses existing SQL functions
+ * Uses useUser hook from shared context
  */
 export function ProtectedRoute({
   children,
@@ -21,7 +21,7 @@ export function ProtectedRoute({
   allowedRoles,
   fallback,
 }: ProtectedRouteProps) {
-  const { user, loading } = useCurrentUser();
+  const { user, loading } = useUser();
   const router = useRouter();
   const [hasAccess, setHasAccess] = useState(false);
 

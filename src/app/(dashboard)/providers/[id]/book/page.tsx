@@ -1,5 +1,8 @@
-import { createClient } from '@/lib/supabase/server';
-import { notFound, redirect } from 'next/navigation';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import BookingForm from '@/components/bookings/BookingForm';
 import Link from 'next/link';
 
@@ -9,42 +12,99 @@ interface PageProps {
   }>;
 }
 
-export default async function ProviderBookPage({ params }: PageProps) {
-  const supabase = await createClient();
+export default function ProviderBookPage({ params }: PageProps) {
+  const router = useRouter();
+  const [providerId, setProviderId] = useState<string>('');
+  const [provider, setProvider] = useState<any>(null);
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Await params (Next.js 15+)
-  const { id: providerId } = await params;
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const resolvedParams = await params;
+        setProviderId(resolvedParams.id);
+        
+        const supabase = createClient();
 
-  // Check if user is authenticated
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+        // Check if user is authenticated
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/login');
+        if (!user) {
+          router.push('/signin');
+          return;
+        }
+
+        // Get provider info
+        const { data: providerData, error: providerError } = await supabase
+          .from('profiles')
+          .select('id, full_name, business_name, avatar_url, bio')
+          .eq('id', resolvedParams.id)
+          .eq('role', 'provider')
+          .single();
+
+        if (providerError || !providerData) {
+          setError('Provider não encontrado');
+          setLoading(false);
+          return;
+        }
+
+        setProvider(providerData);
+
+        // Get provider services
+        const { data: servicesData, error: servicesError } = await supabase
+          .from('services')
+          .select('id, title, description, duration_min, price')
+          .eq('provider_id', resolvedParams.id)
+          .eq('is_active', true)
+          .order('title');
+
+        if (servicesError) {
+          setError('Erro ao carregar serviços');
+          setLoading(false);
+          return;
+        }
+
+        setServices(servicesData || []);
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading provider:', err);
+        setError('Erro ao carregar dados');
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [params, router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+      </div>
+    );
   }
 
-  // Get provider info
-  const { data: provider, error: providerError } = await supabase
-    .from('profiles')
-    .select('id, full_name, business_name, avatar_url, bio')
-    .eq('id', providerId)
-    .eq('role', 'provider')
-    .single();
-
-  if (providerError || !provider) {
-    notFound();
+  if (error || !provider) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+          <p className="text-red-800 dark:text-red-200">{error || 'Provider não encontrado'}</p>
+          <Link
+            href="/search"
+            className="mt-4 inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Voltar à Busca
+          </Link>
+        </div>
+      </div>
+    );
   }
 
-  // Get provider services
-  const { data: services, error: servicesError } = await supabase
-    .from('services')
-    .select('id, title, description, duration_min, price')
-    .eq('provider_id', providerId)
-    .eq('is_active', true)
-    .order('title');
-
-  if (servicesError || !services || services.length === 0) {
+  if (services.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
@@ -116,11 +176,10 @@ export default async function ProviderBookPage({ params }: PageProps) {
         providerId={providerId}
         services={services}
         onSuccess={(bookingId) => {
-          // Redirect to bookings page on success
-          window.location.href = '/bookings';
+          router.push('/bookings');
         }}
         onCancel={() => {
-          window.location.href = `/providers/${providerId}`;
+          router.push(`/providers/${providerId}`);
         }}
       />
 

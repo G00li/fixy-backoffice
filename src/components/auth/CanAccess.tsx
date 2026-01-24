@@ -1,7 +1,7 @@
 'use client';
 
 import { usePermissions } from '@/hooks/usePermissions';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useUser } from '@/context/UserContext';
 
 interface CanAccessProps {
   children: React.ReactNode;
@@ -23,7 +23,7 @@ export function CanAccess({
   fallback = null,
 }: CanAccessProps) {
   const permissions = usePermissions();
-  const { user } = useCurrentUser();
+  const { user } = useUser();
 
   // Check permission
   if (permission) {

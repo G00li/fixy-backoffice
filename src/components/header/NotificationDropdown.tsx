@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dropdown } from '../ui/dropdown/Dropdown';
 import { NotificationBadge } from '../notifications/NotificationBadge';
@@ -11,16 +12,17 @@ import {
 } from '@/app/actions/notifications';
 import { Notification } from '@/types/notifications';
 import { formatTimeAgo, getPriorityColor, isUnread } from '@/types/notifications';
-import { useCurrentUser } from '@/hooks/useCurrentUser';
+import { useUser } from '@/context/UserContext';
 
 export default function NotificationDropdown() {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
   
-  // Use existing hook to get current user
-  const { user, loading: userLoading } = useCurrentUser();
+  // Use shared context to get current user
+  const { user, loading: userLoading } = useUser();
   const userId = user?.id || null;
 
   // Fetch notifications
@@ -124,7 +126,7 @@ export default function NotificationDropdown() {
     // Navigate if action_url exists
     if (notification.action_url) {
       closeDropdown();
-      window.location.href = notification.action_url;
+      router.push(notification.action_url);
     }
   };
   return (

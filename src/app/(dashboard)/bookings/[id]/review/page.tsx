@@ -1,45 +1,108 @@
-import { createClient } from '@/lib/supabase/server';
-import { notFound, redirect } from 'next/navigation';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import ReviewForm from '@/components/reviews/ReviewForm';
 import { getReviewByBookingId } from '@/app/actions/reviews';
 import Link from 'next/link';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default async function BookingReviewPage({ params }: PageProps) {
-  const supabase = await createClient();
+export default function BookingReviewPage({ params }: PageProps) {
+  const router = useRouter();
+  const [bookingId, setBookingId] = useState<string>('');
+  const [booking, setBooking] = useState<any>(null);
+  const [existingReview, setExistingReview] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Check if user is authenticated
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const resolvedParams = await params;
+        setBookingId(resolvedParams.id);
+        
+        const supabase = createClient();
 
-  if (!user) {
-    redirect('/login');
+        // Check if user is authenticated
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+          router.push('/signin');
+          return;
+        }
+
+        // Get booking details
+        const { data: bookingData, error: bookingError } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            provider:profiles!provider_id(full_name, business_name),
+            service:services(title)
+          `)
+          .eq('id', resolvedParams.id)
+          .single();
+
+        if (bookingError || !bookingData) {
+          setError('Agendamento não encontrado');
+          setLoading(false);
+          return;
+        }
+
+        // Verify user is the client
+        if (bookingData.client_id !== user.id) {
+          router.push('/bookings');
+          return;
+        }
+
+        setBooking(bookingData);
+
+        // Check if review already exists
+        const reviewResult = await getReviewByBookingId(resolvedParams.id);
+        if (reviewResult.success && reviewResult.review) {
+          setExistingReview(reviewResult.review);
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Error loading booking:', err);
+        setError('Erro ao carregar dados');
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, [params, router]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-500"></div>
+      </div>
+    );
   }
 
-  // Get booking details
-  const { data: booking, error: bookingError } = await supabase
-    .from('bookings')
-    .select(`
-      *,
-      provider:profiles!provider_id(full_name, business_name),
-      service:services(title)
-    `)
-    .eq('id', params.id)
-    .single();
-
-  if (bookingError || !booking) {
-    notFound();
-  }
-
-  // Verify user is the client
-  if (booking.client_id !== user.id) {
-    redirect('/bookings');
+  if (error || !booking) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 text-center">
+          <p className="text-red-800 dark:text-red-200">{error || 'Agendamento não encontrado'}</p>
+          <Link
+            href="/bookings"
+            className="mt-4 inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Voltar aos Agendamentos
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   // Verify booking is completed
@@ -77,10 +140,7 @@ export default async function BookingReviewPage({ params }: PageProps) {
     );
   }
 
-  // Check if review already exists
-  const existingReview = await getReviewByBookingId(params.id);
-
-  if (existingReview.success && existingReview.review) {
+  if (existingReview) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6 text-center">
@@ -149,14 +209,14 @@ export default async function BookingReviewPage({ params }: PageProps) {
 
       {/* Review Form */}
       <ReviewForm
-        bookingId={params.id}
+        bookingId={bookingId}
         serviceName={serviceName}
         providerName={providerName}
         onSuccess={() => {
-          window.location.href = '/bookings';
+          router.push('/bookings');
         }}
         onCancel={() => {
-          window.location.href = '/bookings';
+          router.push('/bookings');
         }}
       />
 

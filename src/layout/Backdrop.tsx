@@ -1,8 +1,14 @@
-import { useSidebar } from "@/context/SidebarContext";
+import { useSidebarStore } from "@/stores/sidebarStore";
 import React from "react";
 
+/**
+ * Backdrop component - Optimized with Zustand
+ * Only re-renders when isMobileOpen changes
+ */
 const Backdrop: React.FC = () => {
-  const { isMobileOpen, toggleMobileSidebar } = useSidebar();
+  // Use Zustand selector to only subscribe to isMobileOpen
+  const isMobileOpen = useSidebarStore((state) => state.isMobileOpen);
+  const toggleMobileSidebar = useSidebarStore((state) => state.toggleMobileSidebar);
 
   if (!isMobileOpen) return null;
 
