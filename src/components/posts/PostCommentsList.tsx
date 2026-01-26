@@ -1,11 +1,11 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { PostComment } from "@/types/posts";
+import { PostComment, PostCommentWithUser } from "@/types/posts";
 import { getPostComments, commentOnPost } from "@/app/actions/posts";
 
 interface PostCommentsListProps {
   postId: string;
-  initialComments?: PostComment[];
+  initialComments?: PostCommentWithUser[];
   initialTotal?: number;
 }
 
@@ -14,7 +14,7 @@ const PostCommentsList: React.FC<PostCommentsListProps> = ({
   initialComments = [],
   initialTotal = 0,
 }) => {
-  const [comments, setComments] = useState<PostComment[]>(initialComments);
+  const [comments, setComments] = useState<PostCommentWithUser[]>(initialComments);
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -133,16 +133,16 @@ const PostCommentsList: React.FC<PostCommentsListProps> = ({
           <>
             {comments.map((comment) => (
               <div key={comment.id} className="flex gap-3">
-                {comment.user?.avatar_url ? (
+                {comment.user_avatar ? (
                   <img
-                    src={comment.user.avatar_url}
-                    alt={comment.user.full_name || 'User'}
+                    src={comment.user_avatar}
+                    alt={comment.user_name || 'User'}
                     className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                   />
                 ) : (
                   <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center flex-shrink-0">
                     <span className="text-xs font-medium text-gray-600 dark:text-gray-400">
-                      {(comment.user?.full_name || 'U')[0].toUpperCase()}
+                      {(comment.user_name || 'U')[0].toUpperCase()}
                     </span>
                   </div>
                 )}
@@ -150,7 +150,7 @@ const PostCommentsList: React.FC<PostCommentsListProps> = ({
                 <div className="flex-1 min-w-0">
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2">
                     <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {comment.user?.full_name || 'Anonymous'}
+                      {comment.user_name || 'Anonymous'}
                     </p>
                     <p className="text-sm text-gray-700 dark:text-gray-300 mt-1 break-words">
                       {comment.comment}

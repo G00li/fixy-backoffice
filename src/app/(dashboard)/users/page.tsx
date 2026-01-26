@@ -107,7 +107,7 @@ async function UserListContent({ searchParams }: { searchParams: SearchParams })
               <option value="client">Client</option>
             </select>
           </div>
-          <Button type="submit" size="md" variant="outline">
+          <button type="submit" className="inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
             <svg
               className="h-5 w-5 stroke-current"
               fill="none"
@@ -142,7 +142,7 @@ async function UserListContent({ searchParams }: { searchParams: SearchParams })
               />
             </svg>
             Filter
-          </Button>
+          </button>
         </form>
       </div>
 
@@ -198,11 +198,11 @@ async function UserListContent({ searchParams }: { searchParams: SearchParams })
             <TableBody className="divide-y divide-gray-100 dark:divide-gray-800">
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="px-6 py-12 text-center">
+                  <td colSpan={5} className="px-6 py-12 text-center">
                     <p className="text-sm text-gray-500 dark:text-gray-400">
                       No users found
                     </p>
-                  </TableCell>
+                  </td>
                 </TableRow>
               ) : (
                 users.map((user) => (

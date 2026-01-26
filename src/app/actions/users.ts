@@ -163,8 +163,8 @@ export async function uploadAvatar(formData: FormData) {
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'] as const;
+    if (!(allowedTypes as readonly string[]).includes(file.type)) {
       return { success: false, error: 'Invalid file type. Only JPG, PNG, and WebP are allowed' };
     }
 
@@ -259,8 +259,8 @@ export async function uploadCoverImage(formData: FormData) {
     }
 
     // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'] as const;
+    if (!(allowedTypes as readonly string[]).includes(file.type)) {
       return { success: false, error: 'Invalid file type. Only JPG, PNG, and WebP are allowed' };
     }
 

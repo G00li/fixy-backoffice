@@ -12,9 +12,10 @@ import type {
 // PUT - Atualizar especialidade
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // TODO: Obter providerId do usuário autenticado
     const providerId = request.headers.get('x-provider-id');
     
@@ -30,7 +31,7 @@ export async function PUT(
 
     const body: UpdateSpecialtyRequest = await request.json();
 
-    const specialty = await updateProviderSpecialty(params.id, providerId, body);
+    const specialty = await updateProviderSpecialty(id, providerId, body);
 
     return NextResponse.json<ApiResponse<ProviderCategory>>({
       success: true,
@@ -52,9 +53,10 @@ export async function PUT(
 // DELETE - Remover especialidade
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // TODO: Obter providerId do usuário autenticado
     const providerId = request.headers.get('x-provider-id');
     
@@ -68,7 +70,7 @@ export async function DELETE(
       );
     }
 
-    await deleteProviderSpecialty(params.id, providerId);
+    await deleteProviderSpecialty(id, providerId);
 
     return NextResponse.json<ApiResponse<null>>({
       success: true,

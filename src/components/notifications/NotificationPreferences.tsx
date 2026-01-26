@@ -72,10 +72,15 @@ export default function NotificationPreferences({
       );
 
       // Call server action
+      // Filter out null values to match the expected type
+      const filteredUpdates = Object.fromEntries(
+        Object.entries(updates).filter(([_, value]) => value !== null)
+      );
+      
       const result = await updateNotificationPreference({
         user_id: userId,
         notification_type: notificationType,
-        ...updates,
+        ...filteredUpdates,
       });
 
       if (result.success) {
@@ -103,7 +108,7 @@ export default function NotificationPreferences({
   // Debounced update for quiet hours (to avoid too many calls while typing)
   const debouncedUpdate = useDebounce(handleUpdate, 1000);
 
-  const handlePreferenceUpdate = (
+  const handlePreferenceUpdate = async (
     notificationType: string,
     updates: Partial<NotificationPreference>
   ) => {
@@ -112,7 +117,7 @@ export default function NotificationPreferences({
       debouncedUpdate(notificationType, updates);
     } else {
       // For other updates, call immediately
-      handleUpdate(notificationType, updates);
+      await handleUpdate(notificationType, updates);
     }
   };
 

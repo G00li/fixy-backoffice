@@ -6,9 +6,11 @@ import { revalidatePath } from 'next/cache';
 import {
   CreatePostParams,
   UpdatePostParams,
+  UpdatePostParamsWithId,
   ProviderPost,
   PostWithProvider,
   PostComment,
+  PostCommentWithUser,
   POST_VALIDATION,
 } from '@/types/posts';
 
@@ -235,7 +237,7 @@ export async function getPostDetail(postId: string) {
 }
 
 // Update provider post
-export async function updateProviderPost(params: UpdatePostParams) {
+export async function updateProviderPost(params: UpdatePostParamsWithId) {
   try {
     const supabase = await createClient();
     
@@ -329,7 +331,7 @@ export async function deleteProviderPost(postId: string) {
     // Delete media files from storage (fire and forget)
     if (post.media_urls && post.media_urls.length > 0) {
       const filePaths = post.media_urls
-        .map(url => url.split('/post-images/')[1])
+        .map((url: string) => url.split('/post-images/')[1])
         .filter(Boolean);
       
       if (filePaths.length > 0) {
@@ -530,7 +532,7 @@ export async function getPostComments(params: {
 
     return {
       success: true,
-      comments: comments as PostComment[],
+      comments: comments as PostCommentWithUser[],
       total: count || 0,
       page,
       limit,
@@ -568,8 +570,8 @@ export async function uploadPostMedia(formData: FormData) {
     }
 
     // Validate file type
-    const isImage = POST_VALIDATION.ALLOWED_IMAGE_TYPES.includes(file.type);
-    const isVideo = POST_VALIDATION.ALLOWED_VIDEO_TYPES.includes(file.type);
+    const isImage = (POST_VALIDATION.ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type);
+    const isVideo = (POST_VALIDATION.ALLOWED_VIDEO_TYPES as readonly string[]).includes(file.type);
 
     if (!isImage && !isVideo) {
       return { success: false, error: 'Invalid file type. Only images and videos are allowed' };

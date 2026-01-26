@@ -226,7 +226,7 @@ export default function ChangePasswordForm() {
       </div>
 
       {/* Submit Button */}
-      <Button
+      <button
         type="submit"
         disabled={
           loading || 
@@ -236,10 +236,10 @@ export default function ChangePasswordForm() {
           newPassword !== confirmPassword ||
           currentPassword === newPassword
         }
-        className="w-full"
+        className="w-full h-11 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white shadow-theme-xs hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-600 dark:hover:bg-brand-700"
       >
         {loading ? 'Changing Password...' : 'Change Password'}
-      </Button>
+      </button>
     </form>
   );
 }

@@ -4,10 +4,11 @@ import type { ApiResponse, Category } from '@/types/provider-specialties';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const category = await getCategoryById(params.id);
+    const { id } = await params;
+    const category = await getCategoryById(id);
 
     return NextResponse.json<ApiResponse<Category>>({
       success: true,

@@ -55,7 +55,6 @@ export default async function PostDetailPage({ params }: PageProps) {
   }
 
   const post = result.post;
-  const provider = post.provider;
   const isOwner = user.id === post.provider_id;
 
   return (
@@ -90,25 +89,25 @@ export default async function PostDetailPage({ params }: PageProps) {
         {/* Provider Info */}
         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            {provider.avatar_url ? (
+            {post.provider_avatar ? (
               <img
-                src={provider.avatar_url}
-                alt={provider.full_name || 'Provider'}
+                src={post.provider_avatar}
+                alt={post.provider_name || 'Provider'}
                 className="w-12 h-12 rounded-full object-cover"
               />
             ) : (
               <div className="w-12 h-12 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center">
                 <span className="text-brand-600 dark:text-brand-400 font-medium text-lg">
-                  {(provider.business_name || provider.full_name || 'P')[0].toUpperCase()}
+                  {(post.provider_name || 'P')[0].toUpperCase()}
                 </span>
               </div>
             )}
             <div>
               <div className="flex items-center gap-2">
                 <p className="font-semibold text-gray-900 dark:text-white">
-                  {provider.business_name || provider.full_name}
+                  {post.provider_name}
                 </p>
-                {provider.is_verified && (
+                {post.provider_is_verified && (
                   <VerifiedBadge isVerified={true} size="sm" showLabel={false} />
                 )}
               </div>
@@ -148,7 +147,7 @@ export default async function PostDetailPage({ params }: PageProps) {
 
         {/* Media Gallery */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
-          {post.media_urls.map((url, index) => (
+          {post.media_urls?.map((url, index) => (
             <div key={index} className="relative aspect-square bg-gray-100 dark:bg-gray-900">
               {post.type === 'video' ? (
                 <video

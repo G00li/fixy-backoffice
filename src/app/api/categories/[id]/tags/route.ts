@@ -13,7 +13,7 @@ export async function GET(
 
     const tags = await getCategoryTags(
       id,
-      limit ? parseInt(limit) : 20
+      limit ? (parseInt(limit) || 20) : 20
     );
 
     return NextResponse.json<ApiResponse<CategorySpecialtyTag[]>>({

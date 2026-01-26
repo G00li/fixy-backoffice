@@ -12,9 +12,10 @@ import type {
 // PUT - Atualizar item de portfolio
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // TODO: Obter providerId do usuário autenticado
     const providerId = request.headers.get('x-provider-id');
     
@@ -30,7 +31,7 @@ export async function PUT(
 
     const body: UpdatePortfolioRequest = await request.json();
 
-    const item = await updatePortfolioItem(params.id, providerId, body);
+    const item = await updatePortfolioItem(id, providerId, body);
 
     return NextResponse.json<ApiResponse<ProviderPortfolioItem>>({
       success: true,
@@ -52,9 +53,10 @@ export async function PUT(
 // DELETE - Remover item de portfolio
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // TODO: Obter providerId do usuário autenticado
     const providerId = request.headers.get('x-provider-id');
     
@@ -68,7 +70,7 @@ export async function DELETE(
       );
     }
 
-    await deletePortfolioItem(params.id, providerId);
+    await deletePortfolioItem(id, providerId);
 
     return NextResponse.json<ApiResponse<null>>({
       success: true,

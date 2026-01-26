@@ -69,7 +69,7 @@ export default async function ProviderSchedulePage({ params }: PageProps) {
 
       {/* Bookings List */}
       <BookingsList
-        bookings={bookings}
+        bookings={bookings || []}
         isProvider={true}
       />
     </div>

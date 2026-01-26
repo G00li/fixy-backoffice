@@ -12,9 +12,10 @@ import type {
 // PUT - Atualizar certificação
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // TODO: Obter providerId do usuário autenticado
     const providerId = request.headers.get('x-provider-id');
     
@@ -30,7 +31,7 @@ export async function PUT(
 
     const body: UpdateCertificationRequest = await request.json();
 
-    const certification = await updateCertification(params.id, providerId, body);
+    const certification = await updateCertification(id, providerId, body);
 
     return NextResponse.json<ApiResponse<ProviderCertification>>({
       success: true,
@@ -52,9 +53,10 @@ export async function PUT(
 // DELETE - Remover certificação
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // TODO: Obter providerId do usuário autenticado
     const providerId = request.headers.get('x-provider-id');
     
@@ -68,7 +70,7 @@ export async function DELETE(
       );
     }
 
-    await deleteCertification(params.id, providerId);
+    await deleteCertification(id, providerId);
 
     return NextResponse.json<ApiResponse<null>>({
       success: true,

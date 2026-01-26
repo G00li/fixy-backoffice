@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const parentId = searchParams.get('parent_id');
 
     const categories = await getCategories(
-      level ? (parseInt(level) as 1 | 2) : undefined,
+      level ? ((parseInt(level) || 1) as 1 | 2) : undefined,
       parentId || undefined
     );
 

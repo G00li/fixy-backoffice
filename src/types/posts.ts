@@ -148,6 +148,7 @@ export interface CreatePostParams {
  */
 export interface UpdatePostParams {
   caption?: string;
+  service_id?: string;
   tags?: string[];
   alt_text?: string;
   is_active?: boolean;

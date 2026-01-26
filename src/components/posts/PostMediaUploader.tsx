@@ -56,8 +56,8 @@ const PostMediaUploader: React.FC<PostMediaUploaderProps> = ({
     }
 
     // Validate file type
-    const isImage = POST_VALIDATION.ALLOWED_IMAGE_TYPES.includes(file.type);
-    const isVideo = POST_VALIDATION.ALLOWED_VIDEO_TYPES.includes(file.type);
+    const isImage = (POST_VALIDATION.ALLOWED_IMAGE_TYPES as readonly string[]).includes(file.type);
+    const isVideo = (POST_VALIDATION.ALLOWED_VIDEO_TYPES as readonly string[]).includes(file.type);
 
     if (!isImage && !isVideo) {
       setError('Invalid file type. Only images (JPG, PNG, WebP) and videos (MP4, WebM) are allowed');
@@ -86,7 +86,7 @@ const PostMediaUploader: React.FC<PostMediaUploaderProps> = ({
     }
 
     setUploading(false);
-    onUploadComplete(result.url!, result.type!);
+    onUploadComplete(result.url!, result.type! as 'image' | 'video');
     
     // Reset input
     if (fileInputRef.current) {

@@ -47,7 +47,7 @@ export async function getCurrentUserWithRole() {
 
     const userWithRole: UserWithRole = {
       id: user.id,
-      email: user.email,
+      email: user.email || null,
       role: role || 'client',
     };
 

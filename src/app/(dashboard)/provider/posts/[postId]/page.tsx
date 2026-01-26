@@ -85,7 +85,7 @@ export default async function PostDetailPage({ params }: PageProps) {
         <div className="relative aspect-square bg-gray-100 dark:bg-gray-900">
           {post.type === 'carousel' ? (
             <div className="grid grid-cols-2 gap-1 h-full">
-              {post.media_urls.slice(0, 4).map((url, index) => (
+              {post.media_urls?.slice(0, 4).map((url, index) => (
                 <img
                   key={index}
                   src={url}
@@ -96,14 +96,14 @@ export default async function PostDetailPage({ params }: PageProps) {
             </div>
           ) : post.type === 'video' ? (
             <video
-              src={post.media_urls[0]}
+              src={post.media_urls?.[0]}
               poster={post.thumbnail_url || undefined}
               controls
               className="w-full h-full object-contain"
             />
           ) : (
             <img
-              src={post.media_urls[0]}
+              src={post.media_urls?.[0]}
               alt={post.caption || 'Post image'}
               className="w-full h-full object-contain"
             />

@@ -73,7 +73,7 @@ async function UserDetailContent({ userId }: { userId: string }) {
                 email: user.email,
                 role: user.role,
               }}
-              currentUserRole={currentUserRole}
+              currentUserRole={currentUserRole || null}
             />
             <Link
               href={`/users/${userId}/edit`}

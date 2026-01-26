@@ -26,7 +26,11 @@ const ProviderPostCard: React.FC<ProviderPostCardProps> = ({
   const [loading, setLoading] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  const provider = 'provider' in post ? post.provider : null;
+  const provider = 'provider_name' in post ? {
+    full_name: post.provider_name,
+    avatar_url: post.provider_avatar,
+    is_verified: post.provider_is_verified
+  } : null;
 
   const handleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -72,6 +76,7 @@ const ProviderPostCard: React.FC<ProviderPostCardProps> = ({
       className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
       onClick={handleCardClick}
     >
+      <>
       {/* Header */}
       {provider && (
         <div className="p-4 flex items-center justify-between">
@@ -157,7 +162,7 @@ const ProviderPostCard: React.FC<ProviderPostCardProps> = ({
 
       {/* Media */}
       <div className="relative aspect-square bg-gray-100 dark:bg-gray-900">
-        {post.type === 'carousel' && post.media_urls.length > 1 ? (
+        {post.type === 'carousel' && post.media_urls && post.media_urls.length > 1 ? (
           <div className="relative w-full h-full">
             <img
               src={post.media_urls[0]}
@@ -170,14 +175,14 @@ const ProviderPostCard: React.FC<ProviderPostCardProps> = ({
           </div>
         ) : post.type === 'video' ? (
           <video
-            src={post.media_urls[0]}
+            src={post.media_urls?.[0]}
             poster={post.thumbnail_url || undefined}
             controls
             className="w-full h-full object-cover"
           />
         ) : (
           <img
-            src={post.media_urls[0]}
+            src={post.media_urls?.[0]}
             alt={post.alt_text || 'Post image'}
             className="w-full h-full object-cover"
           />
@@ -274,6 +279,7 @@ const ProviderPostCard: React.FC<ProviderPostCardProps> = ({
           </div>
         )}
       </div>
+      </>
     </div>
   );
 };

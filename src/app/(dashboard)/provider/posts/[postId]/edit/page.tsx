@@ -72,7 +72,7 @@ export default async function EditPostPage({ params }: PageProps) {
           Current Media
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {post.media_urls.map((url, index) => (
+          {post.media_urls?.map((url, index) => (
             <div key={index} className="relative aspect-square">
               {post.type === 'video' ? (
                 <video
@@ -103,7 +103,7 @@ export default async function EditPostPage({ params }: PageProps) {
             id: post.id,
             caption: post.caption || undefined,
             tags: post.tags || [],
-            media_urls: post.media_urls,
+            media_urls: post.media_urls || undefined,
             type: post.type,
           }}
           providerId={user.id}
